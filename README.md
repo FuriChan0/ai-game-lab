@@ -1,4 +1,4 @@
-<center># 🎮 AI Game Lab | Игровая Вселенная, рожденная ИИ</center>
+# 🎮 AI Game Lab | Игровая Вселенная, рожденная ИИ
 
 <div align="center">
 
