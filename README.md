@@ -40,11 +40,11 @@
 
 1.  Склонируйте репозиторий:
     ```bash
-    git clone https://github.com/your-username/your-repo-name.git
+    git clone https://github.com/FuriChan0/ai-game-lab.git
     ```
 2.  Перейдите в папку с нужной игрой:
     ```bash
-    cd your-repo-name/game-folder
+    cd ai-game-lab/game-folder
     ```
 3.  Запустите локальный сервер. Самый простой способ — использовать Python:
     ```bash
