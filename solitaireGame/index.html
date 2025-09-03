@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пасьянс Косынка</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s, transform 0.3s;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: #f5f5dc;
+            color: #556b2f;
+            overflow-x: hidden;
+        }
+        
+        body.dark-theme {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        
+        .container {
+            background-color: #f0e68c;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: auto;
+            max-width: 95vw;
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+        }
+        
+        body.dark-theme .container {
+            background-color: #34495e;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #6b8e23;
+            transition: transform 0.3s;
+        }
+        
+        h1:hover {
+            transform: scale(1.05);
+        }
+        
+        body.dark-theme h1 {
+            color: #27ae60;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background-color: #faf0e6;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            transition: transform 0.3s;
+        }
+        
+        .game-info:hover {
+            transform: translateY(-2px);
+        }
+        
+        body.dark-theme .game-info {
+            background-color: #2c3e50;
+        }
+        
+        .moves, .timer {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+        
+        button {
+            background-color: #deb887;
+            border: none;
+            color: #556b2f;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(20, 20);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50, 50);
+                opacity: 0;
+            }
+        }
+        
+        button:hover {
+            background-color: #bdb76b;
+            transform: translateY(-2px);
+        }
+        
+        body.dark-theme button {
+            background-color: #3498db;
+            color: #ecf0f1;
+        }
+        
+        .game-area {
+            width: 100%;
+            min-height: 500px;
+            position: relative;
+            margin-bottom: 40px;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin: 0 auto;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .foundation, .tableau, .stock, .waste {
+            min-height: 120px;
+            background-color: rgba(245, 245, 220, 0.5);
+            border-radius: 5px;
+            border: 2px dashed #bdb76b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        body.dark-theme .foundation, 
+        body.dark-theme .tableau, 
+        body.dark-theme .stock, 
+        body.dark-theme .waste {
+            background-color: rgba(44, 62, 80, 0.5);
+            border-color: #3498db;
+        }
+        
+        .card {
+            width: 80px;
+            height: 120px;
+            background-color: #faf0e6;
+            border-radius: 5px;
+            border: 1px solid #bdb76b;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .card.dragging {
+            cursor: grabbing;
+            z-index: 1000;
+            transform: rotate(3deg);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            opacity: 0.7;
+        }
+        
+        .card.dragging-source {
+            opacity: 0.3;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card.red {
+            color: #c44;
+        }
+        
+        .card.black {
+            color: #2c3e50;
+        }
+        
+        body.dark-theme .card {
+            background-color: #2c3e50;
+            border-color: #3498db;
+        }
+        
+        body.dark-theme .card.red {
+            color: #e74c3c;
+        }
+        
+        body.dark-theme .card.black {
+            color: #ecf0f1;
+        }
+        
+        .card-value {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .card-suit {
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        .card-top, .card-bottom {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .card-bottom {
+            align-items: flex-end;
+            transform: rotate(180deg);
+        }
+        
+        .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #6b8e23,
+                #6b8e23 10px,
+                #556b2f 10px,
+                #556b2f 20px
+            );
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+        }
+        
+        body.dark-theme .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #27ae60,
+                #27ae60 10px,
+                #2c3e50 10px,
+                #2c3e50 20px
+            );
+        }
+        
+        .tableau .card {
+            margin-top: 30px;
+        }
+        
+        .tableau .card:first-child {
+            margin-top: 0;
+        }
+        
+        .game-status {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .win {
+            color: #27ae60;
+            animation: win 1s infinite alternate;
+        }
+        
+        @keyframes win {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.1);
+            }
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            text-align: center;
+            color: #6b8e23;
+            font-size: 14px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            padding: 10px;
+            background-color: rgba(245, 245, 220, 0.8);
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        body.dark-theme .instructions {
+            color: #bdc3c7;
+            background-color: rgba(44, 62, 80, 0.8);
+        }
+        
+        .theme-toggle {
+            margin-top: 20px;
+            background: none;
+            border: 2px solid #bdb76b;
+            color: #556b2f;
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        body.dark-theme .theme-toggle {
+            border-color: #3498db;
+            color: #ecf0f1;
+        }
+        
+        .theme-icon {
+            transition: transform 0.5s;
+        }
+        
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(180deg);
+        }
+        
+        .card-placeholder {
+            width: 80px;
+            height: 120px;
+            border: 2px dashed #bdb76b;
+            border-radius: 5px;
+            opacity: 0.5;
+        }
+        
+        body.dark-theme .card-placeholder {
+            border-color: #3498db;
+        }
+        
+        @media (max-width: 1200px) {
+            .card {
+                width: 70px;
+                height: 105px;
+            }
+            
+            .card-value {
+                font-size: 18px;
+            }
+            
+            .card-suit {
+                font-size: 20px;
+            }
+            
+            .card-placeholder {
+                width: 70px;
+                height: 105px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .card {
+                width: 60px;
+                height: 90px;
+            }
+            
+            .card-value {
+                font-size: 16px;
+            }
+            
+            .card-suit {
+                font-size: 18px;
+            }
+            
+            .card-placeholder {
+                width: 60px;
+                height: 90px;
+            }
+            
+            .foundation, .tableau, .stock, .waste {
+                min-height: 100px;
+            }
+            
+            .game-area {
+                min-height: 400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .card {
+                width: 50px;
+                height: 75px;
+            }
+            
+            .card-value {
+                font-size: 14px;
+            }
+            
+            .card-suit {
+                font-size: 16px;
+            }
+            
+            .card-placeholder {
+                width: 50px;
+                height: 75px;
+            }
+            
+            .foundation, .tableau, .stock, .waste {
+                min-height: 80px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .game-area {
+                min-height: 350px;
+                margin-bottom: 30px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+        }
+        
+        .drop-target {
+            box-shadow: 0 0 10px rgba(107, 142, 35, 0.8);
+        }
+        
+        body.dark-theme .drop-target {
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ПАСЬЯНС КОСЫНКА</h1>
+        
+        <div class="game-info">
+            <div class="moves">Ходы: <span id="moves-count">0</span></div>
+            <div class="timer">Время: <span id="time">0</span></div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">Новая игра</button>
+        </div>
+        
+        <div class="game-area">
+            <div class="game-board" id="game-board">
+                <!-- Сток и сброс -->
+                <div class="stock" id="stock"></div>
+                <div class="waste" id="waste"></div>
+                <div class="card-placeholder"></div>
+                
+                <!-- Фундаменты -->
+                <div class="foundation" id="foundation-0"></div>
+                <div class="foundation" id="foundation-1"></div>
+                <div class="foundation" id="foundation-2"></div>
+                <div class="foundation" id="foundation-3"></div>
+                
+                <!-- Игровые столбцы -->
+                <div class="tableau" id="tableau-0"></div>
+                <div class="tableau" id="tableau-1"></div>
+                <div class="tableau" id="tableau-2"></div>
+                <div class="tableau" id="tableau-3"></div>
+                <div class="tableau" id="tableau-4"></div>
+                <div class="tableau" id="tableau-5"></div>
+                <div class="tableau" id="tableau-6"></div>
+            </div>
+        </div>
+        
+        <div class="game-status" id="game-status"></div>
+        
+        <div class="instructions">
+            Кликните на сток, чтобы взять карты. Перетаскивайте карты между столбцами и фундаментами.
+        </div>
+        
+        <button class="theme-toggle" id="theme-toggle">
+            <span class="theme-icon">🌓</span> Сменить тему
+        </button>
+    </div>
+
+    <script>
+        // Конфигурация игры
+        const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+        const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        
+        // Состояние игры
+        let gameState = {
+            deck: [],
+            stock: [],
+            waste: [],
+            foundations: [[], [], [], []],
+            tableau: [[], [], [], [], [], [], []],
+            moves: 0,
+            startTime: null,
+            timerInterval: null,
+            theme: 'light',
+            draggingCard: null,
+            dragOffset: { x: 0, y: 0 },
+            draggingStack: []
+        };
+        
+        // Элементы DOM
+        const movesCountElement = document.getElementById('moves-count');
+        const timeElement = document.getElementById('time');
+        const gameStatusElement = document.getElementById('game-status');
+        const newGameButton = document.getElementById('new-game-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        // Инициализация игры
+        function initGame() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState.deck = createDeck();
+            gameState.stock = [];
+            gameState.waste = [];
+            gameState.foundations = [[], [], [], []];
+            gameState.tableau = [[], [], [], [], [], [], []];
+            gameState.moves = 0;
+            gameState.startTime = null;
+            gameState.draggingCard = null;
+            gameState.draggingStack = [];
+            
+            // Обновляем интерфейс
+            movesCountElement.textContent = '0';
+            timeElement.textContent = '0';
+            gameStatusElement.textContent = '';
+            gameStatusElement.classList.remove('win');
+            
+            // Очищаем игровое поле
+            document.querySelectorAll('.stock, .waste, .foundation, .tableau').forEach(container => {
+                container.innerHTML = '';
+            });
+            
+            // Перемешиваем колоду
+            shuffleDeck(gameState.deck);
+            
+            // Раздаем карты на игровые столбцы
+            dealCards();
+            
+            // Добавляем оставшиеся карты в сток
+            gameState.stock = [...gameState.deck];
+            updateStockView();
+            
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+        
+        // Создание колоды
+        function createDeck() {
+            const deck = [];
+            
+            for (const suit of SUITS) {
+                for (const value of VALUES) {
+                    deck.push({
+                        suit,
+                        value,
+                        color: (suit === 'hearts' || suit === 'diamonds') ? 'red' : 'black',
+                        isFaceUp: false
+                    });
+                }
+            }
+            
+            return deck;
+        }
+        
+        // Перемешивание колоды
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+        
+        // Раздача карт
+        function dealCards() {
+            let cardIndex = 0;
+            
+            for (let i = 0; i < 7; i++) {
+                for (let j = i; j < 7; j++) {
+                    const card = gameState.deck[cardIndex++];
+                    // Последняя карта в каждом столбце открыта
+                    card.isFaceUp = (j === i);
+                    gameState.tableau[j].push(card);
+                }
+            }
+            
+            // Удаляем разданные карты из основной колоды
+            gameState.deck.splice(0, cardIndex);
+            
+            // Обновляем представление таблицы
+            updateTableView();
+        }
+        
+        // Обновление представления стока
+        function updateStockView() {
+            const stockElement = document.getElementById('stock');
+            stockElement.innerHTML = '';
+            
+            if (gameState.stock.length > 0) {
+                const cardElement = createCardElement({}, true);
+                stockElement.appendChild(cardElement);
+                
+                // Добавляем обработчик клика на сток
+                cardElement.addEventListener('click', () => {
+                    if (gameState.startTime === null) {
+                        gameState.startTime = Date.now();
+                        startTimer();
+                    }
+                    
+                    drawCards();
+                });
+            } else if (gameState.waste.length > 0) {
+                // Если сток пуст, но есть карты в сбросе, показываем возможность переворота
+                const cardElement = createCardElement({}, true);
+                cardElement.textContent = '🔄';
+                stockElement.appendChild(cardElement);
+                
+                // Добавляем обработчик клика для переворота колоды
+                cardElement.addEventListener('click', () => {
+                    resetStock();
+                });
+            }
+        }
+        
+        // Взятие карт из стока
+        function drawCards() {
+            if (gameState.stock.length === 0) {
+                return; // Нечего брать
+            }
+            
+            // Берем три карты из стока (или меньше, если осталось меньше трех)
+            const drawCount = Math.min(3, gameState.stock.length);
+            const drawnCards = gameState.stock.splice(-drawCount, drawCount);
+            
+            // Переворачиваем карты и добавляем в сброс
+            drawnCards.forEach(card => {
+                card.isFaceUp = true;
+                gameState.waste.push(card);
+            });
+            
+            // Обновляем представления
+            updateStockView();
+            updateWasteView();
+            
+            // Увеличиваем счетчик ходов
+            gameState.moves++;
+            movesCountElement.textContent = gameState.moves;
+        }
+        
+        // Сброс стока - перемещение всех карты из сброса обратно в сток
+        function resetStock() {
+            if (gameState.waste.length === 0) {
+                return; // Нечего сбрасывать
+            }
+            
+            // Перемещаем все карты из сброса в сток
+            gameState.stock = [...gameState.waste.reverse()];
+            gameState.waste = [];
+            
+            // Переворачиваем карты в стоке рубашкой вверх
+            gameState.stock.forEach(card => card.isFaceUp = false);
+            
+            // Обновляем представления
+            updateStockView();
+            updateWasteView();
+            
+            // Увеличиваем счетчик ходов
+            gameState.moves++;
+            movesCountElement.textContent = gameState.moves;
+        }
+        
+        // Обновление представления сброса
+        function updateWasteView() {
+            const wasteElement = document.getElementById('waste');
+            wasteElement.innerHTML = '';
+            
+            if (gameState.waste.length > 0) {
+                const topCard = gameState.waste[gameState.waste.length - 1];
+                const cardElement = createCardElement(topCard);
+                wasteElement.appendChild(cardElement);
+                
+                // Добавляем обработчики событий для карты
+                addCardEventListeners(cardElement, topCard, 'waste');
+            }
+        }
+        
+        // Обновление представления таблицы
+        function updateTableView() {
+            for (let i = 0; i < 7; i++) {
+                const tableauElement = document.getElementById(`tableau-${i}`);
+                tableauElement.innerHTML = '';
+                
+                gameState.tableau[i].forEach((card, index) => {
+                    const cardElement = createCardElement(card);
+                    
+                    // Устанавливаем позицию карты в столбце
+                    cardElement.style.top = `${index * 30}px`;
+                    
+                    tableauElement.appendChild(cardElement);
+                    
+                    // Добавляем обработчики событий для карты
+                    if (card.isFaceUp) {
+                        addCardEventListeners(cardElement, card, 'tableau', i, index);
+                    }
+                });
+            }
+        }
+        
+        // Обновление представления фундаментов
+        function updateFoundationsView() {
+            for (let i = 0; i < 4; i++) {
+                const foundationElement = document.getElementById(`foundation-${i}`);
+                foundationElement.innerHTML = '';
+                
+                if (gameState.foundations[i].length > 0) {
+                    const topCard = gameState.foundations[i][gameState.foundations[i].length - 1];
+                    const cardElement = createCardElement(topCard);
+                    foundationElement.appendChild(cardElement);
+                    
+                    // Добавляем обработчики событий для карты
+                    addCardEventListeners(cardElement, topCard, 'foundation', i);
+                }
+            }
+        }
+        
+        // Создание элемента карты
+        function createCardElement(card, isBack = false) {
+            const cardElement = document.createElement('div');
+            cardElement.className = `card ${isBack ? 'card-back' : ''}`;
+            
+            if (!isBack) {
+                cardElement.classList.add(card.color);
+                
+                const topElement = document.createElement('div');
+                topElement.className = 'card-top';
+                
+                const valueElement = document.createElement('div');
+                valueElement.className = 'card-value';
+                valueElement.textContent = card.value;
+                
+                const suitElement = document.createElement('div');
+                suitElement.className = 'card-suit';
+                suitElement.textContent = getSuitSymbol(card.suit);
+                
+                topElement.appendChild(valueElement);
+                topElement.appendChild(suitElement);
+                
+                const bottomElement = document.createElement('div');
+                bottomElement.className = 'card-bottom';
+                
+                const valueElement2 = document.createElement('div');
+                valueElement2.className = 'card-value';
+                valueElement2.textContent = card.value;
+                
+                const suitElement2 = document.createElement('div');
+                suitElement2.className = 'card-suit';
+                suitElement2.textContent = getSuitSymbol(card.suit);
+                
+                bottomElement.appendChild(valueElement2);
+                bottomElement.appendChild(suitElement2);
+                
+                cardElement.appendChild(topElement);
+                cardElement.appendChild(bottomElement);
+            } else {
+                cardElement.textContent = '🎴';
+            }
+            
+            return cardElement;
+        }
+        
+        // Получение символа масти
+        function getSuitSymbol(suit) {
+            switch (suit) {
+                case 'hearts': return '♥';
+                case 'diamonds': return '♦';
+                case 'clubs': return '♣';
+                case 'spades': return '♠';
+                default: return '';
+            }
+        }
+        
+        // Добавление обработчиков событий для карты
+        function addCardEventListeners(cardElement, card, sourceType, sourceIndex = null, cardIndex = null) {
+            cardElement.addEventListener('mousedown', (e) => {
+                if (gameState.startTime === null) {
+                    gameState.startTime = Date.now();
+                    startTimer();
+                }
+                
+                startDragging(cardElement, card, sourceType, sourceIndex, cardIndex, e);
+                e.preventDefault();
+            });
+        }
+        
+        // Начало перетаскивания карты
+        function startDragging(cardElement, card, sourceType, sourceIndex, cardIndex, e) {
+            // Определяем стопку карт для перемещения
+            let cardsToDrag = [];
+            
+            if (sourceType === 'tableau') {
+                // Для tableau берем все карты от выбранной до конца столбца
+                cardsToDrag = gameState.tableau[sourceIndex].slice(cardIndex);
+                
+                // Проверяем, что все карты в стопке образуют валидную последовательность
+                for (let i = 1; i < cardsToDrag.length; i++) {
+                    const prevCard = cardsToDrag[i - 1];
+                    const currCard = cardsToDrag[i];
+                    
+                    if (prevCard.color === currCard.color || 
+                        getCardValue(currCard.value) !== getCardValue(prevCard.value) - 1) {
+                        // Невалидная последовательность - берем только до этой карты
+                        cardsToDrag = cardsToDrag.slice(0, i);
+                        break;
+                    }
+                }
+                
+                // Помечаем все карты в стопке как перетаскиваемые
+                const tableauElement = document.getElementById(`tableau-${sourceIndex}`);
+                const cardElements = tableauElement.querySelectorAll('.card');
+                for (let i = cardIndex; i < cardIndex + cardsToDrag.length; i++) {
+                    if (cardElements[i]) {
+                        cardElements[i].classList.add('dragging-source');
+                    }
+                }
+            } else {
+                // Для waste и foundation берем только одну карту
+                cardsToDrag = [card];
+                cardElement.classList.add('dragging-source');
+            }
+            
+            gameState.draggingStack = cardsToDrag;
+            
+            // Создаем элемент для перетаскивания
+            const dragElement = createCardElement(card);
+            dragElement.classList.add('dragging');
+            dragElement.style.position = 'fixed';
+            dragElement.style.left = `${e.clientX - 40}px`;
+            dragElement.style.top = `${e.clientY - 60}px`;
+            dragElement.style.width = `${cardElement.offsetWidth}px`;
+            dragElement.style.height = `${cardElement.offsetHeight}px`;
+            dragElement.style.margin = '0';
+            dragElement.style.zIndex = '1000';
+            
+            document.body.appendChild(dragElement);
+            
+            gameState.draggingCard = {
+                element: dragElement,
+                card,
+                sourceType,
+                sourceIndex,
+                cardIndex,
+                cards: cardsToDrag
+            };
+            
+            // Вычисляем смещение курсора относительно карты
+            const rect = cardElement.getBoundingClientRect();
+            gameState.dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            // Добавляем обработчики событий для перетаскивания
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+            
+            // Подсвечиваем возможные цели для перетаскивания
+            highlightDropTargets(card);
+        }
+        
+        // Обработка движения мыши при перетаскивании
+        function handleDragMove(e) {
+            if (!gameState.draggingCard) return;
+            
+            const dragElement = gameState.draggingCard.element;
+            dragElement.style.left = `${e.clientX - gameState.dragOffset.x}px`;
+            dragElement.style.top = `${e.clientY - gameState.dragOffset.y}px`;
+            
+            // Проверяем, над каким элементом находится курсор
+            const elements = document.elementsFromPoint(e.clientX, e.clientY);
+            let dropTarget = null;
+            let dropTargetType = null;
+            
+            for (const element of elements) {
+                if (element.classList.contains('tableau')) {
+                    dropTarget = element;
+                    dropTargetType = 'tableau';
+                    break;
+                } else if (element.classList.contains('foundation')) {
+                    dropTarget = element;
+                    dropTargetType = 'foundation';
+                    break;
+                } else if (element.classList.contains('card')) {
+                    // Если курсор над картой, определяем ее контейнер
+                    const container = element.closest('.tableau, .foundation');
+                    if (container) {
+                        dropTarget = container;
+                        dropTargetType = container.classList.contains('tableau') ? 'tableau' : 'foundation';
+                        break;
+                    }
+                }
+            }
+            
+            // Убираем подсветку со всех элементов
+            document.querySelectorAll('.tableau, .foundation').forEach(el => {
+                el.classList.remove('drop-target');
+            });
+            
+            // Подсвечиваем целевой элемент, если он подходит
+            if (dropTarget && isValidDropTarget(dropTarget, dropTargetType)) {
+                dropTarget.classList.add('drop-target');
+            }
+        }
+        
+        // Обработка окончания перетаскивания
+        function handleDragEnd(e) {
+            if (!gameState.draggingCard) return;
+            
+            // Убираем элемент перетаскивания
+            gameState.draggingCard.element.remove();
+            
+            // Убираем подсветку со всех элементов
+            document.querySelectorAll('.tableau, .foundation').forEach(el => {
+                el.classList.remove('drop-target');
+            });
+            
+            // Убираем пометку о перетаскивании с исходных карт
+            document.querySelectorAll('.dragging-source').forEach(el => {
+                el.classList.remove('dragging-source');
+            });
+            
+            // Определяем, над каким элементом была отпущена карта
+            const elements = document.elementsFromPoint(e.clientX, e.clientY);
+            let targetElement = null;
+            let targetType = null;
+            let targetIndex = null;
+            
+            for (const element of elements) {
+                if (element.classList.contains('tableau')) {
+                    targetElement = element;
+                    targetType = 'tableau';
+                    targetIndex = parseInt(element.id.split('-')[1]);
+                    break;
+                } else if (element.classList.contains('foundation')) {
+                    targetElement = element;
+                    targetType = 'foundation';
+                    targetIndex = parseInt(element.id.split('-')[1]);
+                    break;
+                } else if (element.classList.contains('card')) {
+                    // Если отпустили над картой, определяем ее контейнер
+                    const container = element.closest('.tableau, .foundation');
+                    if (container) {
+                        targetElement = container;
+                        targetType = container.classList.contains('tableau') ? 'tableau' : 'foundation';
+                        targetIndex = parseInt(container.id.split('-')[1]);
+                        break;
+                    }
+                }
+            }
+            
+            if (targetElement && targetType) {
+                // Пытаемся переместить карту
+                moveCard(gameState.draggingCard, targetType, targetIndex);
+            }
+            
+            // Убираем обработчики событий
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            
+            gameState.draggingCard = null;
+            gameState.draggingStack = [];
+        }
+        
+        // Проверка, является ли элемент допустимой целью для перетаскивания
+        function isValidDropTarget(targetElement, targetType) {
+            if (!gameState.draggingCard) return false;
+            
+            const card = gameState.draggingCard.cards[0]; // Берем первую карту в стопке
+            
+            if (targetType === 'tableau') {
+                const targetIndex = parseInt(targetElement.id.split('-')[1]);
+                
+                if (gameState.tableau[targetIndex].length === 0) {
+                    // Можно класть только короля на пустой столбец
+                    return card.value === 'K';
+                } else {
+                    const topCard = gameState.tableau[targetIndex][gameState.tableau[targetIndex].length - 1];
+                    // Проверяем чередование цветов и последовательность значений
+                    return topCard.color !== card.color && 
+                           getCardValue(topCard.value) === getCardValue(card.value) + 1;
+                }
+            } else if (targetType === 'foundation') {
+                const targetIndex = parseInt(targetElement.id.split('-')[1]);
+                
+                if (gameState.foundations[targetIndex].length === 0) {
+                    // Можно класть только туза на пустой фундамент
+                    return card.value === 'A';
+                } else {
+                    const topCard = gameState.foundations[targetIndex][gameState.foundations[targetIndex].length - 1];
+                    // Проверяем одинаковую масть и последовательность значений
+                    return topCard.suit === card.suit && 
+                           getCardValue(topCard.value) === getCardValue(card.value) - 1;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Получение числового значения карты
+        function getCardValue(value) {
+            const values = {
+                'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, 
+                '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 
+                'J': 11, 'Q': 12, 'K': 13
+            };
+            return values[value];
+        }
+        
+        // Подсветка возможных целей для перетаскивания
+        function highlightDropTargets(card) {
+            // Проверяем столбцы
+            for (let i = 0; i < 7; i++) {
+                const tableau = document.getElementById(`tableau-${i}`);
+                if (isValidDropTarget(tableau, 'tableau')) {
+                    tableau.classList.add('drop-target');
+                }
+            }
+            
+            // Проверяем фундаменты
+            for (let i = 0; i < 4; i++) {
+                const foundation = document.getElementById(`foundation-${i}`);
+                if (isValidDropTarget(foundation, 'foundation')) {
+                    foundation.classList.add('drop-target');
+                }
+            }
+        }
+        
+        // Перемещение карты
+        function moveCard(draggingCard, targetType, targetIndex) {
+            let moved = false;
+            const { sourceType, sourceIndex, cardIndex, cards } = draggingCard;
+            
+            // Проверяем, допустим ли ход
+            const targetElement = document.getElementById(`${targetType}-${targetIndex}`);
+            if (!isValidDropTarget(targetElement, targetType)) {
+                return false;
+            }
+            
+            if (sourceType === 'tableau' && targetType === 'tableau') {
+                // Перемещение между столбцами
+                if (sourceIndex !== targetIndex) {
+                    // Удаляем карты из исходного столбца
+                    gameState.tableau[sourceIndex].splice(cardIndex, cards.length);
+                    
+                    // Добавляем карты в целевой столбец
+                    gameState.tableau[targetIndex] = gameState.tableau[targetIndex].concat(cards);
+                    
+                    // Открываем следующую карту в исходном столбце, если она есть
+                    if (gameState.tableau[sourceIndex].length > 0) {
+                        const topCard = gameState.tableau[sourceIndex][gameState.tableau[sourceIndex].length - 1];
+                        if (!topCard.isFaceUp) {
+                            topCard.isFaceUp = true;
+                        }
+                    }
+                    
+                    moved = true;
+                }
+            } else if (sourceType === 'tableau' && targetType === 'foundation') {
+                // Перемещение из столбца в фундамент (только одну карту)
+                if (cards.length === 1) {
+                    const card = cards[0];
+                    
+                    if (gameState.foundations[targetIndex].length === 0 && card.value === 'A') {
+                        const movedCard = gameState.tableau[sourceIndex].pop();
+                        gameState.foundations[targetIndex].push(movedCard);
+                        
+                        // Открываем следующую карту в столбце, если она есть
+                        if (gameState.tableau[sourceIndex].length > 0) {
+                            const topCard = gameState.tableau[sourceIndex][gameState.tableau[sourceIndex].length - 1];
+                            if (!topCard.isFaceUp) {
+                                topCard.isFaceUp = true;
+                            }
+                        }
+                        
+                        moved = true;
+                    } else if (gameState.foundations[targetIndex].length > 0) {
+                        const topFoundationCard = gameState.foundations[targetIndex][gameState.foundations[targetIndex].length - 1];
+                        if (topFoundationCard.suit === card.suit && 
+                            getCardValue(card.value) === getCardValue(topFoundationCard.value) + 1) {
+                            const movedCard = gameState.tableau[sourceIndex].pop();
+                            gameState.foundations[targetIndex].push(movedCard);
+                            
+                            // Открываем следующую карту в столбце, если она есть
+                            if (gameState.tableau[sourceIndex].length > 0) {
+                                const topCard = gameState.tableau[sourceIndex][gameState.tableau[sourceIndex].length - 1];
+                                if (!topCard.isFaceUp) {
+                                    topCard.isFaceUp = true;
+                                }
+                            }
+                            
+                            moved = true;
+                        }
+                    }
+                }
+            } else if (sourceType === 'waste' && targetType === 'tableau') {
+                // Перемещение из сброса в столбец (только одну карту)
+                const card = cards[0];
+                
+                if (gameState.tableau[targetIndex].length === 0 && card.value === 'K') {
+                    const movedCard = gameState.waste.pop();
+                    gameState.tableau[targetIndex].push(movedCard);
+                    moved = true;
+                } else if (gameState.tableau[targetIndex].length > 0) {
+                    const topTableauCard = gameState.tableau[targetIndex][gameState.tableau[targetIndex].length - 1];
+                    if (topTableauCard.color !== card.color && 
+                        getCardValue(card.value) === getCardValue(topTableauCard.value) - 1) {
+                        const movedCard = gameState.waste.pop();
+                        gameState.tableau[targetIndex].push(movedCard);
+                        moved = true;
+                    }
+                }
+            } else if (sourceType === 'waste' && targetType === 'foundation') {
+                // Перемещение из сброса в фундамент (только одну карту)
+                const card = cards[0];
+                
+                if (gameState.foundations[targetIndex].length === 0 && card.value === 'A') {
+                    const movedCard = gameState.waste.pop();
+                    gameState.foundations[targetIndex].push(movedCard);
+                    moved = true;
+                } else if (gameState.foundations[targetIndex].length > 0) {
+                    const topFoundationCard = gameState.foundations[targetIndex][gameState.foundations[targetIndex].length - 1];
+                    if (topFoundationCard.suit === card.suit && 
+                        getCardValue(card.value) === getCardValue(topFoundationCard.value) + 1) {
+                        const movedCard = gameState.waste.pop();
+                        gameState.foundations[targetIndex].push(movedCard);
+                        moved = true;
+                    }
+                }
+            }
+            
+            if (moved) {
+                // Обновляем представления
+                updateTableView();
+                updateWasteView();
+                updateFoundationsView();
+                updateStockView();
+                
+                // Увеличиваем счетчик ходов
+                gameState.moves++;
+                movesCountElement.textContent = gameState.moves;
+                
+                // Проверяем условие победы
+                checkWinCondition();
+            }
+        }
+        
+        // Проверка условие победы
+        function checkWinCondition() {
+            let allFoundationsFull = true;
+            
+            for (const foundation of gameState.foundations) {
+                if (foundation.length !== 13) {
+                    allFoundationsFull = false;
+                    break;
+                }
+            }
+            
+            if (allFoundationsFull) {
+                gameStatusElement.textContent = 'Поздравляем! Вы выиграли!';
+                gameStatusElement.classList.add('win');
+                clearInterval(gameState.timerInterval);
+            }
+        }
+        
+        // Запуск таймера
+        function startTimer() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState.timerInterval = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+                timeElement.textContent = elapsedSeconds;
+            }, 1000);
+        }
+        
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            newGameButton.addEventListener('click', initGame);
+            
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            if (gameState.theme === 'light') {
+                gameState.theme = 'dark';
+                body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Светлая тема';
+            } else {
+                gameState.theme = 'light';
+                body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Тёмная тема';
+            }
+        }
+        
+        // Инициализация игры при загрузке
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
