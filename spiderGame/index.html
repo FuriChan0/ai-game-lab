@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пасьянс Паук</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s, transform 0.3s;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: #0d5617;
+            color: #f5f5dc;
+            overflow-x: hidden;
+        }
+        
+        body.dark-theme {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        
+        .container {
+            background-color: #2e8b57;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: auto;
+            max-width: 95vw;
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+        }
+        
+        body.dark-theme .container {
+            background-color: #34495e;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #f5f5dc;
+            transition: transform 0.3s;
+        }
+        
+        h1:hover {
+            transform: scale(1.05);
+        }
+        
+        body.dark-theme h1 {
+            color: #27ae60;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background-color: rgba(245, 245, 220, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            transition: transform 0.3s;
+        }
+        
+        .game-info:hover {
+            transform: translateY(-2px);
+        }
+        
+        body.dark-theme .game-info {
+            background-color: #2c3e50;
+        }
+        
+        .moves, .timer {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+        
+        button {
+            background-color: #3cb371;
+            border: none;
+            color: #f5f5dc;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(20, 20);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50, 50);
+                opacity: 0;
+            }
+        }
+        
+        button:hover {
+            background-color: #2e8b57;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        body.dark-theme button {
+            background-color: #3498db;
+            color: #ecf0f1;
+        }
+        
+        body.dark-theme button:hover {
+            background-color: #2980b9;
+        }
+        
+        .game-area {
+            width: 100%;
+            min-height: 500px;
+            position: relative;
+            margin-bottom: 40px;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin: 0 auto;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .tableau {
+            min-height: 120px;
+            background-color: rgba(245, 245, 220, 0.1);
+            border-radius: 5px;
+            border: 2px dashed #3cb371;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        body.dark-theme .tableau {
+            background-color: rgba(44, 62, 80, 0.5);
+            border-color: #3498db;
+        }
+        
+        .card {
+            width: 70px;
+            height: 100px;
+            background-color: #f5f5dc;
+            border-radius: 5px;
+            border: 1px solid #3cb371;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px;
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .card.dragging {
+            cursor: grabbing;
+            z-index: 1000;
+            transform: rotate(3deg);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            opacity: 0.9;
+        }
+        
+        .card.dragging-source {
+            opacity: 0.5;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card.red {
+            color: #c44;
+        }
+        
+        .card.black {
+            color: #2c3e50;
+        }
+        
+        body.dark-theme .card {
+            background-color: #2c3e50;
+            border-color: #3498db;
+        }
+        
+        body.dark-theme .card.red {
+            color: #e74c3c;
+        }
+        
+        body.dark-theme .card.black {
+            color: #ecf0f1;
+        }
+        
+        .card-value {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .card-suit {
+            font-size: 20px;
+            text-align: center;
+        }
+        
+        .card-top, .card-bottom {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .card-bottom {
+            align-items: flex-end;
+            transform: rotate(180deg);
+        }
+        
+        .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #3cb371,
+                #3cb371 10px,
+                #2e8b57 10px,
+                #2e8b57 20px
+            );
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+        }
+        
+        body.dark-theme .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #27ae60,
+                #27ae60 10px,
+                #2c3e50 10px,
+                #2c3e50 20px
+            );
+        }
+        
+        .tableau .card {
+            margin-top: 25px;
+        }
+        
+        .tableau .card:first-child {
+            margin-top: 0;
+        }
+        
+        .completed-set {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .completed-card {
+            width: 30px;
+            height: 40px;
+            background-color: #f5f5dc;
+            border-radius: 3px;
+            border: 1px solid #3cb371;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        body.dark-theme .completed-card {
+            background-color: #2c3e50;
+            border-color: #3498db;
+        }
+        
+        .game-status {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .win {
+            color: #3cb371;
+            animation: win 1s infinite alternate;
+        }
+        
+        @keyframes win {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.1);
+            }
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            text-align: center;
+            color: #f5f5dc;
+            font-size: 14px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            padding: 10px;
+            background-color: rgba(245, 245, 220, 0.1);
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        body.dark-theme .instructions {
+            color: #bdc3c7;
+            background-color: rgba(44, 62, 80, 0.8);
+        }
+        
+        .theme-toggle {
+            margin-top: 20px;
+            background: none;
+            border: 2px solid #3cb371;
+            color: #f5f5dc;
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        body.dark-theme .theme-toggle {
+            border-color: #3498db;
+            color: #ecf0f1;
+        }
+        
+        .theme-icon {
+            transition: transform 0.5s;
+        }
+        
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(180deg);
+        }
+        
+        @media (max-width: 1200px) {
+            .card {
+                width: 60px;
+                height: 85px;
+            }
+            
+            .card-value {
+                font-size: 14px;
+            }
+            
+            .card-suit {
+                font-size: 18px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .card {
+                width: 50px;
+                height: 75px;
+            }
+            
+            .card-value {
+                font-size: 12px;
+            }
+            
+            .card-suit {
+                font-size: 16px;
+            }
+            
+            .game-board {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .card {
+                width: 40px;
+                height: 60px;
+            }
+            
+            .card-value {
+                font-size: 10px;
+            }
+            
+            .card-suit {
+                font-size: 12px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .game-area {
+                min-height: 350px;
+                margin-bottom: 30px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        .drop-target {
+            box-shadow: 0 0 10px rgba(60, 179, 113, 0.8);
+        }
+        
+        body.dark-theme .drop-target {
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ПАСЬЯНС ПАУК</h1>
+        
+        <div class="game-info">
+            <div class="moves">Ходы: <span id="moves-count">0</span></div>
+            <div class="timer">Время: <span id="time">0</span></div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">Новая игра</button>
+            <button id="undo-btn" disabled>Вернуть ход</button>
+            <button id="hint-btn">Подсказка</button>
+        </div>
+        
+        <div class="game-area">
+            <div class="completed-set" id="completed-set"></div>
+            <div class="game-board" id="game-board">
+                <!-- Игровые столбцы -->
+                <div class="tableau" id="tableau-0"></div>
+                <div class="tableau" id="tableau-1"></div>
+                <div class="tableau" id="tableau-2"></div>
+                <div class="tableau" id="tableau-3"></div>
+                <div class="tableau" id="tableau-4"></div>
+                <div class="tableau" id="tableau-5"></div>
+                <div class="tableau" id="tableau-6"></div>
+                <div class="tableau" id="tableau-7"></div>
+                <div class="tableau" id="tableau-8"></div>
+                <div class="tableau" id="tableau-9"></div>
+            </div>
+        </div>
+        
+        <div class="game-status" id="game-status"></div>
+        
+        <div class="instructions">
+            Перетаскивайте карты между столбцами, чтобы собрать последовательности от короля до туза. 
+            Когда собирается полная последовательность, она автоматически удаляется.
+        </div>
+        
+        <button class="theme-toggle" id="theme-toggle">
+            <span class="theme-icon">🌓</span> Сменить тему
+        </button>
+    </div>
+
+    <script>
+        // Конфигурация игры
+        const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+        const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        
+        // Состояние игры
+        let gameState = {
+            deck: [],
+            tableau: [[], [], [], [], [], [], [], [], [], []],
+            completedSets: 0,
+            moves: 0,
+            startTime: null,
+            timerInterval: null,
+            theme: 'light',
+            draggingCard: null,
+            dragOffset: { x: 0, y: 0 },
+            draggingStack: [],
+            history: [],
+            maxHistory: 50 // Максимальное количество ходов в истории
+        };
+        
+        // Элементы DOM
+        const movesCountElement = document.getElementById('moves-count');
+        const timeElement = document.getElementById('time');
+        const gameStatusElement = document.getElementById('game-status');
+        const newGameButton = document.getElementById('new-game-btn');
+        const undoButton = document.getElementById('undo-btn');
+        const hintButton = document.getElementById('hint-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const completedSetElement = document.getElementById('completed-set');
+        const body = document.body;
+        
+        // Инициализация игры
+        function initGame() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState.deck = createDeck();
+            gameState.tableau = [[], [], [], [], [], [], [], [], [], []];
+            gameState.completedSets = 0;
+            gameState.moves = 0;
+            gameState.startTime = null;
+            gameState.draggingCard = null;
+            gameState.draggingStack = [];
+            gameState.history = [];
+            
+            // Обновляем интерфейс
+            movesCountElement.textContent = '0';
+            timeElement.textContent = '0';
+            gameStatusElement.textContent = '';
+            gameStatusElement.classList.remove('win');
+            completedSetElement.innerHTML = '';
+            undoButton.disabled = true;
+            
+            // Очищаем игровое поле
+            document.querySelectorAll('.tableau').forEach(container => {
+                container.innerHTML = '';
+            });
+            
+            // Перемешиваем колоду
+            shuffleDeck(gameState.deck);
+            
+            // Раздаем карты на игровые столбцы
+            dealCards();
+            
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+        
+        // Создание колоды (2 колоды по 52 карты)
+        function createDeck() {
+            const deck = [];
+            
+            // Две колоды
+            for (let d = 0; d < 2; d++) {
+                for (const suit of SUITS) {
+                    for (const value of VALUES) {
+                        deck.push({
+                            suit,
+                            value,
+                            color: (suit === 'hearts' || suit === 'diamonds') ? 'red' : 'black',
+                            isFaceUp: false
+                        });
+                    }
+                }
+            }
+            
+            return deck;
+        }
+        
+        // Перемешивание колоды
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+        
+        // Раздача карты
+        function dealCards() {
+            // Первые 4 столбца получают по 6 карт, остальные по 5
+            const cardsPerColumn = [6, 6, 6, 6, 5, 5, 5, 5, 5, 5];
+            let cardIndex = 0;
+            
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < cardsPerColumn[i]; j++) {
+                    const card = gameState.deck[cardIndex++];
+                    // Последняя карта в каждом столбце открыта
+                    card.isFaceUp = (j === cardsPerColumn[i] - 1);
+                    gameState.tableau[i].push(card);
+                }
+            }
+            
+            // Обновляем представление таблицы
+            updateTableView();
+        }
+        
+        // Сохранение состояния в историю
+        function saveState() {
+            // Сохраняем только данные, а не DOM-элементы
+            const stateToSave = {
+                tableau: JSON.parse(JSON.stringify(gameState.tableau)),
+                completedSets: gameState.completedSets,
+                moves: gameState.moves
+            };
+            
+            gameState.history.push(stateToSave);
+            
+            // Ограничиваем размер истории
+            if (gameState.history.length > gameState.maxHistory) {
+                gameState.history.shift();
+            }
+            
+            // Активируем кнопку отмены
+            undoButton.disabled = false;
+        }
+        
+        // Отмена последнего хода
+        function undo() {
+            if (gameState.history.length === 0) return;
+            
+            const previousState = gameState.history.pop();
+            
+            // Восстанавливаем состояние
+            gameState.tableau = previousState.tableau;
+            gameState.completedSets = previousState.completedSets;
+            gameState.moves = previousState.moves;
+            
+            // Обновляем интерфейс
+            movesCountElement.textContent = gameState.moves;
+            updateTableView();
+            updateCompletedSets();
+            
+            // Деактивируем кнопку, если история пуста
+            if (gameState.history.length === 0) {
+                undoButton.disabled = true;
+            }
+        }
+        
+        // Обновление представления таблицы
+        function updateTableView() {
+            for (let i = 0; i < 10; i++) {
+                const tableauElement = document.getElementById(`tableau-${i}`);
+                tableauElement.innerHTML = '';
+                
+                gameState.tableau[i].forEach((card, index) => {
+                    const cardElement = createCardElement(card);
+                    
+                    // Устанавливаем позицию карты в столбце
+                    cardElement.style.top = `${index * 25}px`;
+                    
+                    tableauElement.appendChild(cardElement);
+                    
+                    // Добавляем обработчики событий для карты
+                    if (card.isFaceUp) {
+                        addCardEventListeners(cardElement, card, 'tableau', i, index);
+                    }
+                });
+            }
+        }
+        
+        // Обновление отображения завершенных наборов
+        function updateCompletedSets() {
+            completedSetElement.innerHTML = '';
+            
+            for (let i = 0; i < gameState.completedSets; i++) {
+                const completedCard = document.createElement('div');
+                completedCard.className = 'completed-card';
+                completedCard.textContent = 'K-A';
+                completedSetElement.appendChild(completedCard);
+            }
+        }
+        
+        // Создание элемента карты
+        function createCardElement(card) {
+            const cardElement = document.createElement('div');
+            
+            if (!card.isFaceUp) {
+                // Карта закрыта - показываем рубашку
+                cardElement.className = 'card card-back';
+                cardElement.textContent = '🎴';
+            } else {
+                // Карта открыта - показываем значение и масть
+                cardElement.className = `card ${card.color}`;
+                cardElement.setAttribute('data-value', card.value);
+                cardElement.setAttribute('data-suit', card.suit);
+                
+                const topElement = document.createElement('div');
+                topElement.className = 'card-top';
+                
+                const valueElement = document.createElement('div');
+                valueElement.className = 'card-value';
+                valueElement.textContent = card.value;
+                
+                const suitElement = document.createElement('div');
+                suitElement.className = 'card-suit';
+                suitElement.textContent = getSuitSymbol(card.suit);
+                
+                topElement.appendChild(valueElement);
+                topElement.appendChild(suitElement);
+                
+                const bottomElement = document.createElement('div');
+                bottomElement.className = 'card-bottom';
+                
+                const valueElement2 = document.createElement('div');
+                valueElement2.className = 'card-value';
+                valueElement2.textContent = card.value;
+                
+                const suitElement2 = document.createElement('div');
+                suitElement2.className = 'card-suit';
+                suitElement2.textContent = getSuitSymbol(card.suit);
+                
+                bottomElement.appendChild(valueElement2);
+                bottomElement.appendChild(suitElement2);
+                
+                cardElement.appendChild(topElement);
+                cardElement.appendChild(bottomElement);
+            }
+            
+            return cardElement;
+        }
+        
+        // Получение символа масти
+        function getSuitSymbol(suit) {
+            switch (suit) {
+                case 'hearts': return '♥';
+                case 'diamonds': return '♦';
+                case 'clubs': return '♣';
+                case 'spades': return '♠';
+                default: return '';
+            }
+        }
+        
+        // Добавление обработчиков событий для карты
+        function addCardEventListeners(cardElement, card, sourceType, sourceIndex = null, cardIndex = null) {
+            cardElement.addEventListener('mousedown', (e) => {
+                if (gameState.startTime === null) {
+                    gameState.startTime = Date.now();
+                    startTimer();
+                }
+                
+                startDragging(cardElement, card, sourceType, sourceIndex, cardIndex, e);
+                e.preventDefault();
+            });
+        }
+        
+        // Начало перетаскивания карты
+        function startDragging(cardElement, card, sourceType, sourceIndex, cardIndex, e) {
+            // Определяем стопку карт для перемещения
+            let cardsToDrag = [];
+            
+            if (sourceType === 'tableau') {
+                // Для tableau берем все карты от выбранной до конца столбца
+                cardsToDrag = gameState.tableau[sourceIndex].slice(cardIndex);
+                
+                // Проверяем, что все карты в стопке образуют валидную последовательность
+                for (let i = 1; i < cardsToDrag.length; i++) {
+                    const prevCard = cardsToDrag[i - 1];
+                    const currCard = cardsToDrag[i];
+                    
+                    // В пасьянсе Паук можно перемещать только последовательные карты
+                    if (getCardValue(currCard.value) !== getCardValue(prevCard.value) - 1) {
+                        // Невалидная последовательность - берем только до этой карты
+                        cardsToDrag = cardsToDrag.slice(0, i);
+                        break;
+                    }
+                }
+                
+                // Помечаем все карты в стопке как перетаскиваемые
+                const tableauElement = document.getElementById(`tableau-${sourceIndex}`);
+                const cardElements = tableauElement.querySelectorAll('.card');
+                for (let i = cardIndex; i < cardIndex + cardsToDrag.length; i++) {
+                    if (cardElements[i]) {
+                        cardElements[i].classList.add('dragging-source');
+                    }
+                }
+            }
+            
+            gameState.draggingStack = cardsToDrag;
+            
+            // Создаем элемент для перетаскивания
+            const dragElement = createCardElement(card);
+            dragElement.classList.add('dragging');
+            dragElement.style.position = 'fixed';
+            dragElement.style.left = `${e.clientX - 35}px`;
+            dragElement.style.top = `${e.clientY - 50}px`;
+            dragElement.style.width = `${cardElement.offsetWidth}px`;
+            dragElement.style.height = `${cardElement.offsetHeight}px`;
+            dragElement.style.margin = '0';
+            dragElement.style.zIndex = '1000';
+            
+            document.body.appendChild(dragElement);
+            
+            gameState.draggingCard = {
+                element: dragElement,
+                card,
+                sourceType,
+                sourceIndex,
+                cardIndex,
+                cards: cardsToDrag
+            };
+            
+            // Вычисляем смещение курсора относительно карты
+            const rect = cardElement.getBoundingClientRect();
+            gameState.dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            // Добавляем обработчики событий для перетаскивания
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+            
+            // Подсвечиваем возможные цели для перетаскивания
+            highlightDropTargets(card);
+        }
+        
+        // Обработка движения мыши при перетаскивании
+        function handleDragMove(e) {
+            if (!gameState.draggingCard) return;
+            
+            const dragElement = gameState.draggingCard.element;
+            dragElement.style.left = `${e.clientX - gameState.dragOffset.x}px`;
+            dragElement.style.top = `${e.clientY - gameState.dragOffset.y}px`;
+            
+            // Проверяем, над каким элементом находится курсор
+            const elements = document.elementsFromPoint(e.clientX, e.clientY);
+            let dropTarget = null;
+            let dropTargetType = null;
+            
+            for (const element of elements) {
+                if (element.classList.contains('tableau')) {
+                    dropTarget = element;
+                    dropTargetType = 'tableau';
+                    break;
+                } else if (element.classList.contains('card')) {
+                    // Если курсор над картой, определяем ее контейнер
+                    const container = element.closest('.tableau');
+                    if (container) {
+                        dropTarget = container;
+                        dropTargetType = 'tableau';
+                        break;
+                    }
+                }
+            }
+            
+            // Убираем подсветку со всех элементов
+            document.querySelectorAll('.tableau').forEach(el => {
+                el.classList.remove('drop-target');
+            });
+            
+            // Подсвечиваем целевой элемент, если он подходит
+            if (dropTarget && isValidDropTarget(dropTarget, dropTargetType)) {
+                dropTarget.classList.add('drop-target');
+            }
+        }
+        
+        // Обработка окончания перетаскивания
+        function handleDragEnd(e) {
+            if (!gameState.draggingCard) return;
+            
+            // Убираем элемент перетаскивания
+            gameState.draggingCard.element.remove();
+            
+            // Убираем подсветку со всех элементов
+            document.querySelectorAll('.tableau').forEach(el => {
+                el.classList.remove('drop-target');
+            });
+            
+            // Убираем пометку о перетаскивании с исходных карт
+            document.querySelectorAll('.dragging-source').forEach(el => {
+                el.classList.remove('dragging-source');
+            });
+            
+            // Определяем, над каким элементом была отпущена карта
+            const elements = document.elementsFromPoint(e.clientX, e.clientY);
+            let targetElement = null;
+            let targetType = null;
+            let targetIndex = null;
+            
+            for (const element of elements) {
+                if (element.classList.contains('tableau')) {
+                    targetElement = element;
+                    targetType = 'tableau';
+                    targetIndex = parseInt(element.id.split('-')[1]);
+                    break;
+                } else if (element.classList.contains('card')) {
+                    // Если отпустили над картой, определяем ее контейнер
+                    const container = element.closest('.tableau');
+                    if (container) {
+                        targetElement = container;
+                        targetType = 'tableau';
+                        targetIndex = parseInt(container.id.split('-')[1]);
+                        break;
+                    }
+                }
+            }
+            
+            if (targetElement && targetType) {
+                // Сохраняем состояние перед перемещением
+                saveState();
+                
+                // Пытаемся переместить карту
+                moveCard(gameState.draggingCard, targetType, targetIndex);
+            }
+            
+            // Убираем обработчики событий
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            
+            gameState.draggingCard = null;
+            gameState.draggingStack = [];
+        }
+        
+        // Проверка, является ли элемент допустимой целью для перетаскивания
+        function isValidDropTarget(targetElement, targetType) {
+            if (!gameState.draggingCard) return false;
+            
+            const card = gameState.draggingCard.cards[0]; // Берем первую карту в стопке
+            
+            if (targetType === 'tableau') {
+                const targetIndex = parseInt(targetElement.id.split('-')[1]);
+                
+                if (gameState.tableau[targetIndex].length === 0) {
+                    // Можно класть любую карту на пустой столбец в пасьянсе Паук
+                    return true;
+                } else {
+                    const topCard = gameState.tableau[targetIndex][gameState.tableau[targetIndex].length - 1];
+                    // Проверяем последовательность значений (карта должна быть на единицу выше)
+                    return getCardValue(topCard.value) === getCardValue(card.value) + 1;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Получение числового значения карты
+        function getCardValue(value) {
+            const values = {
+                'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, 
+                '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 
+                'J': 11, 'Q': 12, 'K': 13
+            };
+            return values[value];
+        }
+        
+        // Подсветка возможных целей для перетаскивания
+        function highlightDropTargets(card) {
+            // Проверяем столбцы
+            for (let i = 0; i < 10; i++) {
+                const tableau = document.getElementById(`tableau-${i}`);
+                if (isValidDropTarget(tableau, 'tableau')) {
+                    tableau.classList.add('drop-target');
+                }
+            }
+        }
+        
+        // Перемещение карты
+        function moveCard(draggingCard, targetType, targetIndex) {
+            let moved = false;
+            const { sourceType, sourceIndex, cardIndex, cards } = draggingCard;
+            
+            // Проверяем, допустим ли ход
+            const targetElement = document.getElementById(`${targetType}-${targetIndex}`);
+            if (!isValidDropTarget(targetElement, targetType)) {
+                return false;
+            }
+            
+            if (sourceType === 'tableau' && targetType === 'tableau') {
+                // Перемещение между столбцами
+                if (sourceIndex !== targetIndex) {
+                    // Удаляем карты из исходного столбца
+                    gameState.tableau[sourceIndex].splice(cardIndex, cards.length);
+                    
+                    // Добавляем карты в целевой столбец
+                    gameState.tableau[targetIndex] = gameState.tableau[targetIndex].concat(cards);
+                    
+                    // Открываем следующую карту в исходном столбце, если она есть
+                    if (gameState.tableau[sourceIndex].length > 0) {
+                        const topCard = gameState.tableau[sourceIndex][gameState.tableau[sourceIndex].length - 1];
+                        if (!topCard.isFaceUp) {
+                            topCard.isFaceUp = true;
+                        }
+                    }
+                    
+                    moved = true;
+                }
+            }
+            
+            if (moved) {
+                // Обновляем представления
+                updateTableView();
+                
+                // Увеличиваем счетчик ходов
+                gameState.moves++;
+                movesCountElement.textContent = gameState.moves;
+                
+                // Проверяем завершенные последовательности
+                checkCompletedSequences();
+                
+                // Проверяем условие победы
+                checkWinCondition();
+            }
+        }
+        
+        // Проверка завершенных последовательностей
+        function checkCompletedSequences() {
+            for (let i = 0; i < 10; i++) {
+                const column = gameState.tableau[i];
+                if (column.length >= 13) {
+                    // Проверяем, есть ли полная последовательность от K до A
+                    let isCompleteSequence = true;
+                    for (let j = 0; j < 13; j++) {
+                        const index = column.length - 1 - j;
+                        if (index < 0 || getCardValue(column[index].value) !== 13 - j) {
+                            isCompleteSequence = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isCompleteSequence) {
+                        // Сохраняем состояние перед удалением последовательности
+                        saveState();
+                        
+                        // Удаляем завершенную последовательность
+                        gameState.tableau[i].splice(-13, 13);
+                        
+                        // Открываем следующую карту в столбце, если она есть
+                        if (gameState.tableau[i].length > 0) {
+                            const topCard = gameState.tableau[i][gameState.tableau[i].length - 1];
+                            if (!topCard.isFaceUp) {
+                                topCard.isFaceUp = true;
+                            }
+                        }
+                        
+                        // Увеличиваем счетчик завершенных наборов
+                        gameState.completedSets++;
+                        
+                        // Обновляем представление
+                        updateTableView();
+                        updateCompletedSets();
+                        
+                        // Проверяем условие победы
+                        checkWinCondition();
+                    }
+                }
+            }
+        }
+        
+        // Проверка условия победы
+        function checkWinCondition() {
+            if (gameState.completedSets === 8) {
+                gameStatusElement.textContent = 'Поздравляем! Вы выиграли!';
+                gameStatusElement.classList.add('win');
+                clearInterval(gameState.timerInterval);
+            }
+        }
+        
+        // Запуск таймера
+        function startTimer() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState.timerInterval = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+                timeElement.textContent = elapsedSeconds;
+            }, 1000);
+        }
+        
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            newGameButton.addEventListener('click', initGame);
+            
+            undoButton.addEventListener('click', undo);
+            
+            hintButton.addEventListener('click', showHint);
+            
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+        
+        // Показать подсказку
+        function showHint() {
+            // Временно подсвечиваем возможные ходы
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.boxShadow = 'none';
+            });
+            
+            // Находим возможные ходы
+            for (let i = 0; i < 10; i++) {
+                const column = gameState.tableau[i];
+                if (column.length > 0) {
+                    const topCard = column[column.length - 1];
+                    
+                    // Ищем столбец, куда можно переместить эту карту
+                    for (let j = 0; j < 10; j++) {
+                        if (i !== j) {
+                            if (gameState.tableau[j].length === 0) {
+                                // Можно переместить на пустой столбец
+                                const cardElement = document.querySelector(`#tableau-${i} .card:last-child`);
+                                cardElement.style.boxShadow = '0 0 10px gold';
+                                break;
+                            } else {
+                                const targetTopCard = gameState.tableau[j][gameState.tableau[j].length - 1];
+                                if (getCardValue(targetTopCard.value) === getCardValue(topCard.value) + 1) {
+                                    const cardElement = document.querySelector(`#tableau-${i} .card:last-child`);
+                                    cardElement.style.boxShadow = '0 0 10px gold';
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Через 2 секунды убираем подсветку
+            setTimeout(() => {
+                document.querySelectorAll('.card').forEach(card => {
+                    card.style.boxShadow = '';
+                });
+            }, 2000);
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            if (gameState.theme === 'light') {
+                gameState.theme = 'dark';
+                body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Светлая тема';
+            } else {
+                gameState.theme = 'light';
+                body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Тёмная тема';
+            }
+        }
+        
+        // Инициализация игры при загрузке
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
