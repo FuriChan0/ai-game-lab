@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #6b8e23 0%, #556b2f 100%);
+            color: #f5f5dc;
+            overflow-x: hidden;
+        }
+        
+        body.dark-theme {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a2530 100%);
+            color: #ecf0f1;
+        }
+        
+        .container {
+            background-color: rgba(240, 230, 140, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: auto;
+            max-width: 95vw;
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+            backdrop-filter: blur(5px);
+        }
+        
+        body.dark-theme .container {
+            background-color: rgba(52, 73, 94, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 36px;
+            color: #556b2f;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, color 0.3s;
+            font-weight: bold;
+        }
+        
+        h1:hover {
+            transform: scale(1.05);
+        }
+        
+        body.dark-theme h1 {
+            color: #27ae60;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: rgba(250, 240, 230, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            transition: transform 0.3s, background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .game-info:hover {
+            transform: translateY(-3px);
+        }
+        
+        body.dark-theme .game-info {
+            background-color: rgba(44, 62, 80, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .score, .best-score {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            color: #556b2f;
+        }
+
+        body.dark-theme .score,
+        body.dark-theme .best-score {
+            color: #27ae60;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, #deb887, #bdb76b);
+            border: none;
+            color: #556b2f;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(20, 20);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50, 50);
+                opacity: 0;
+            }
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:disabled {
+            background: linear-gradient(to bottom, #aaa, #888);
+            cursor: not-allowed;
+            transform: none;
+            color: #777;
+        }
+        
+        body.dark-theme button {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-theme button:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 8px;
+            width: 340px;
+            height: 340px;
+            background: linear-gradient(to bottom, #d2b48c, #bdb76b);
+            border: 3px solid #8b4513;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+        }
+        
+        body.dark-theme .game-board {
+            background: linear-gradient(to bottom, #34495e, #2c3e50);
+            border-color: #1a5276;
+        }
+        
+        .cell {
+            background-color: rgba(250, 240, 230, 0.7);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #556b2f;
+            transition: all 0.2s;
+        }
+        
+        body.dark-theme .cell {
+            background-color: rgba(44, 62, 80, 0.7);
+        }
+        
+        .tile {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            transition: all 0.2s;
+            animation: appear 0.2s;
+        }
+        
+        @keyframes appear {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+        
+        .tile-2 {
+            background-color: #eee4da;
+            color: #776e65;
+        }
+        
+        .tile-4 {
+            background-color: #ede0c8;
+            color: #776e65;
+        }
+        
+        .tile-8 {
+            background-color: #f2b179;
+            color: #f9f6f2;
+        }
+        
+        .tile-16 {
+            background-color: #f59563;
+            color: #f9f6f2;
+        }
+        
+        .tile-32 {
+            background-color: #f67c5f;
+            color: #f9f6f2;
+        }
+        
+        .tile-64 {
+            background-color: #f65e3b;
+            color: #f9f6f2;
+        }
+        
+        .tile-128 {
+            background-color: #edcf72;
+            color: #f9f6f2;
+            font-size: 28px;
+        }
+        
+        .tile-256 {
+            background-color: #edcc61;
+            color: #f9f6f2;
+            font-size: 28px;
+        }
+        
+        .tile-512 {
+            background-color: #edc850;
+            color: #f9f6f2;
+            font-size: 28px;
+        }
+        
+        .tile-1024 {
+            background-color: #edc53f;
+            color: #f9f6f2;
+            font-size: 24px;
+        }
+        
+        .tile-2048 {
+            background-color: #edc22e;
+            color: #f9f6f2;
+            font-size: 24px;
+        }
+        
+        .game-status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 24px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            font-size: 20px;
+        }
+        
+        .win {
+            color: #27ae60;
+            animation: winPulse 1s infinite alternate;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .game-over {
+            color: #c44;
+            animation: winPulse 1s infinite alternate;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes winPulse {
+            from {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            to {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+        
+        .controls-info {
+            background-color: rgba(250, 240, 230, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: #556b2f;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        body.dark-theme .controls-info {
+            background-color: rgba(44, 62, 80, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            color: #27ae60;
+        }
+        
+        .controls-info h3 {
+            margin-bottom: 10px;
+            text-align: center;
+            color: #556b2f;
+        }
+        
+        body.dark-theme .controls-info h3 {
+            color: #27ae60;
+        }
+        
+        .theme-toggle {
+            margin-top: 20px;
+            background: rgba(250, 240, 230, 0.9);
+            border: 2px solid #bdb76b;
+            color: #556b2f;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .theme-toggle:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark-theme .theme-toggle {
+            background: rgba(44, 62, 80, 0.9);
+            border-color: #3498db;
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-icon {
+            transition: transform 0.5s;
+        }
+        
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(180deg);
+        }
+        
+        @media (max-width: 768px) {
+            .game-board {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .tile {
+                font-size: 24px;
+            }
+            
+            .tile-128, .tile-256, .tile-512 {
+                font-size: 22px;
+            }
+            
+            .tile-1024, .tile-2048 {
+                font-size: 20px;
+            }
+            
+            .container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 30px;
+            }
+            
+            .controls {
+                gap: 8px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-board {
+                width: 260px;
+                height: 260px;
+            }
+            
+            .tile {
+                font-size: 20px;
+            }
+            
+            .tile-128, .tile-256, .tile-512 {
+                font-size: 18px;
+            }
+            
+            .tile-1024, .tile-2048 {
+                font-size: 16px;
+            }
+            
+            h1 {
+                font-size: 26px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>2048</h1>
+        
+        <div class="game-info">
+            <div class="score">Счет: <span id="score">0</span></div>
+            <div class="best-score">Лучший: <span id="best-score">0</span></div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">Новая игра</button>
+            <button id="undo-btn">Отменить ход</button>
+        </div>
+        
+        <div class="game-board" id="game-board">
+            <!-- Игровое поле будет сгенерировано через JavaScript -->
+        </div>
+        
+        <div class="game-status" id="game-status"></div>
+        
+        <div class="controls-info">
+            <h3>Как играть:</h3>
+            <p>Используйте стрелки на клавиатуре для перемещения плиток</p>
+            <p>Когда две плитки с одинаковым числом соприкасаются, они сливаются в одну</p>
+            <p>Цель: получить плитку 2048</p>
+        </div>
+        
+        <button class="theme-toggle" id="theme-toggle">
+            <span class="theme-icon">🌓</span> Сменить тему
+        </button>
+    </div>
+
+    <script>
+        // Состояние игры
+        let gameState = {
+            board: [],
+            score: 0,
+            bestScore: parseInt(localStorage.getItem('2048-bestScore')) || 0,
+            gameOver: false,
+            won: false,
+            theme: 'light',
+            moveHistory: []
+        };
+        
+        // Элементы DOM
+        const scoreElement = document.getElementById('score');
+        const bestScoreElement = document.getElementById('best-score');
+        const gameStatusElement = document.getElementById('game-status');
+        const newGameButton = document.getElementById('new-game-btn');
+        const undoButton = document.getElementById('undo-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const gameBoard = document.getElementById('game-board');
+        
+        // Инициализация игры
+        function initGame() {
+            // Сбрасываем состояние игры
+            gameState.board = Array(4).fill().map(() => Array(4).fill(0));
+            gameState.score = 0;
+            gameState.gameOver = false;
+            gameState.won = false;
+            gameState.moveHistory = [];
+            
+            // Обновляем интерфейс
+            scoreElement.textContent = '0';
+            updateBestScore();
+            gameStatusElement.textContent = '';
+            gameStatusElement.classList.remove('game-over', 'win');
+            
+            // Создаем игровое поле
+            createBoard();
+            
+            // Добавляем начальные плитки
+            addRandomTile();
+            addRandomTile();
+            
+            // Отрисовываем игру
+            render();
+            
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+        
+        // Создание игрового поля
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${row}-${col}`;
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+        
+        // Отрисовка игры
+        function render() {
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const cell = document.getElementById(`cell-${row}-${col}`);
+                    cell.innerHTML = '';
+                    
+                    if (gameState.board[row][col] !== 0) {
+                        const tile = document.createElement('div');
+                        tile.className = `tile tile-${gameState.board[row][col]}`;
+                        tile.textContent = gameState.board[row][col];
+                        cell.appendChild(tile);
+                    }
+                }
+            }
+            
+            // Обновляем счет
+            scoreElement.textContent = gameState.score;
+            
+            // Проверяем условия окончания игры
+            checkGameStatus();
+        }
+        
+        // Добавление случайной плитки
+        function addRandomTile() {
+            const emptyCells = [];
+            
+            // Находим все пустые клетки
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    if (gameState.board[row][col] === 0) {
+                        emptyCells.push({ row, col });
+                    }
+                }
+            }
+            
+            // Если есть пустые клетки, добавляем случайную плитку
+            if (emptyCells.length > 0) {
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                gameState.board[randomCell.row][randomCell.col] = Math.random() < 0.9 ? 2 : 4;
+            }
+        }
+        
+        // Сохранение состояния для отмены хода
+        function saveState() {
+            const boardCopy = gameState.board.map(row => [...row]);
+            gameState.moveHistory.push({
+                board: boardCopy,
+                score: gameState.score
+            });
+            
+            // Ограничиваем историю ходов
+            if (gameState.moveHistory.length > 10) {
+                gameState.moveHistory.shift();
+            }
+        }
+        
+        // Отмена последнего хода
+        function undoMove() {
+            if (gameState.moveHistory.length > 0) {
+                const lastState = gameState.moveHistory.pop();
+                gameState.board = lastState.board;
+                gameState.score = lastState.score;
+                gameState.gameOver = false;
+                gameState.won = false;
+                
+                render();
+            }
+        }
+        
+        // Обновление лучшего счета
+        function updateBestScore() {
+            if (gameState.score > gameState.bestScore) {
+                gameState.bestScore = gameState.score;
+                localStorage.setItem('2048-bestScore', gameState.bestScore);
+            }
+            bestScoreElement.textContent = gameState.bestScore;
+        }
+        
+        // Проверка статуса игры
+        function checkGameStatus() {
+            // Проверяем, достигнута ли победа
+            if (!gameState.won) {
+                for (let row = 0; row < 4; row++) {
+                    for (let col = 0; col < 4; col++) {
+                        if (gameState.board[row][col] === 2048) {
+                            gameState.won = true;
+                            gameStatusElement.textContent = 'Поздравляем! Вы выиграли!';
+                            gameStatusElement.classList.add('win');
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // Проверяем, возможны ли еще ходы
+            if (!canMove()) {
+                gameState.gameOver = true;
+                gameStatusElement.textContent = 'Игра окончена!';
+                gameStatusElement.classList.add('game-over');
+            }
+        }
+        
+        // Проверка возможности хода
+        function canMove() {
+            // Проверяем наличие пустых клеток
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    if (gameState.board[row][col] === 0) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Проверяем возможные слияния
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const value = gameState.board[row][col];
+                    
+                    // Проверяем соседние клетки
+                    if (
+                        (col < 3 && gameState.board[row][col + 1] === value) ||
+                        (row < 3 && gameState.board[row + 1][col] === value)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        // Движение влево
+        function moveLeft() {
+            if (gameState.gameOver) return;
+            
+            saveState();
+            let moved = false;
+            let scoreIncrease = 0;
+            
+            for (let row = 0; row < 4; row++) {
+                // Удаляем нули
+                const newRow = gameState.board[row].filter(cell => cell !== 0);
+                const resultRow = [];
+                let i = 0;
+                
+                while (i < newRow.length) {
+                    if (i + 1 < newRow.length && newRow[i] === newRow[i + 1]) {
+                        // Объединяем плитки
+                        const mergedValue = newRow[i] * 2;
+                        resultRow.push(mergedValue);
+                        scoreIncrease += mergedValue;
+                        i += 2;
+                    } else {
+                        // Просто перемещаем плитку
+                        resultRow.push(newRow[i]);
+                        i += 1;
+                    }
+                }
+                
+                // Заполняем оставшиеся ячейки нулями
+                while (resultRow.length < 4) {
+                    resultRow.push(0);
+                }
+                
+                // Проверяем, изменилась ли строка
+                if (!arraysEqual(gameState.board[row], resultRow)) {
+                    moved = true;
+                    gameState.board[row] = resultRow;
+                }
+            }
+            
+            if (moved) {
+                gameState.score += scoreIncrease;
+                updateBestScore();
+                addRandomTile();
+                render();
+            }
+        }
+        
+        // Движение вправо
+        function moveRight() {
+            if (gameState.gameOver) return;
+            
+            saveState();
+            let moved = false;
+            let scoreIncrease = 0;
+            
+            for (let row = 0; row < 4; row++) {
+                // Удаляем нули
+                const newRow = gameState.board[row].filter(cell => cell !== 0);
+                const resultRow = [];
+                let i = newRow.length - 1;
+                
+                while (i >= 0) {
+                    if (i - 1 >= 0 && newRow[i] === newRow[i - 1]) {
+                        // Объединяем плитки
+                        const mergedValue = newRow[i] * 2;
+                        resultRow.unshift(mergedValue);
+                        scoreIncrease += mergedValue;
+                        i -= 2;
+                    } else {
+                        // Просто перемещаем плитку
+                        resultRow.unshift(newRow[i]);
+                        i -= 1;
+                    }
+                }
+                
+                // Заполняем оставшиеся ячейки нулями
+                while (resultRow.length < 4) {
+                    resultRow.unshift(0);
+                }
+                
+                // Проверяем, изменилась ли строка
+                if (!arraysEqual(gameState.board[row], resultRow)) {
+                    moved = true;
+                    gameState.board[row] = resultRow;
+                }
+            }
+            
+            if (moved) {
+                gameState.score += scoreIncrease;
+                updateBestScore();
+                addRandomTile();
+                render();
+            }
+        }
+        
+        // Движение вверх
+        function moveUp() {
+            if (gameState.gameOver) return;
+            
+            saveState();
+            let moved = false;
+            let scoreIncrease = 0;
+            
+            for (let col = 0; col < 4; col++) {
+                // Создаем столбец
+                const column = [];
+                for (let row = 0; row < 4; row++) {
+                    column.push(gameState.board[row][col]);
+                }
+                
+                // Удаляем нули
+                const newColumn = column.filter(cell => cell !== 0);
+                const resultColumn = [];
+                let i = 0;
+                
+                while (i < newColumn.length) {
+                    if (i + 1 < newColumn.length && newColumn[i] === newColumn[i + 1]) {
+                        // Объединяем плитки
+                        const mergedValue = newColumn[i] * 2;
+                        resultColumn.push(mergedValue);
+                        scoreIncrease += mergedValue;
+                        i += 2;
+                    } else {
+                        // Просто перемещаем плитку
+                        resultColumn.push(newColumn[i]);
+                        i += 1;
+                    }
+                }
+                
+                // Заполняем оставшиеся ячейки нулями
+                while (resultColumn.length < 4) {
+                    resultColumn.push(0);
+                }
+                
+                // Проверяем, изменился ли столбец
+                if (!arraysEqual(column, resultColumn)) {
+                    moved = true;
+                    // Обновляем столбец на игровом поле
+                    for (let row = 0; row < 4; row++) {
+                        gameState.board[row][col] = resultColumn[row];
+                    }
+                }
+            }
+            
+            if (moved) {
+                gameState.score += scoreIncrease;
+                updateBestScore();
+                addRandomTile();
+                render();
+            }
+        }
+        
+        // Движение вниз
+        function moveDown() {
+            if (gameState.gameOver) return;
+            
+            saveState();
+            let moved = false;
+            let scoreIncrease = 0;
+            
+            for (let col = 0; col < 4; col++) {
+                // Создаем столбец
+                const column = [];
+                for (let row = 0; row < 4; row++) {
+                    column.push(gameState.board[row][col]);
+                }
+                
+                // Удаляем нули
+                const newColumn = column.filter(cell => cell !== 0);
+                const resultColumn = [];
+                let i = newColumn.length - 1;
+                
+                while (i >= 0) {
+                    if (i - 1 >= 0 && newColumn[i] === newColumn[i - 1]) {
+                        // Объединяем плитки
+                        const mergedValue = newColumn[i] * 2;
+                        resultColumn.unshift(mergedValue);
+                        scoreIncrease += mergedValue;
+                        i -= 2;
+                    } else {
+                        // Просто перемещаем плитку
+                        resultColumn.unshift(newColumn[i]);
+                        i -= 1;
+                    }
+                }
+                
+                // Заполняем оставшиеся ячейки нулями
+                while (resultColumn.length < 4) {
+                    resultColumn.unshift(0);
+                }
+                
+                // Проверяем, изменился ли столбец
+                if (!arraysEqual(column, resultColumn)) {
+                    moved = true;
+                    // Обновляем столбец на игровом поле
+                    for (let row = 0; row < 4; row++) {
+                        gameState.board[row][col] = resultColumn[row];
+                    }
+                }
+            }
+            
+            if (moved) {
+                gameState.score += scoreIncrease;
+                updateBestScore();
+                addRandomTile();
+                render();
+            }
+        }
+        
+        // Вспомогательная функция для сравнения массивов
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            if (gameState.theme === 'light') {
+                gameState.theme = 'dark';
+                body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Светлая тема';
+            } else {
+                gameState.theme = 'light';
+                body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Тёмная тема';
+            }
+        }
+        
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            // Обработка клавиатуры
+            document.addEventListener('keydown', (e) => {
+                if (gameState.gameOver && !gameState.won) return;
+                
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveLeft();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveRight();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        moveUp();
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        moveDown();
+                        break;
+                }
+            });
+            
+            // Кнопки управления
+            newGameButton.addEventListener('click', initGame);
+            undoButton.addEventListener('click', undoMove);
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // Обработка свайпов для мобильных устройств
+            let touchStartX, touchStartY, touchEndX, touchEndY;
+            
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }, { passive: false });
+            
+            document.addEventListener('touchend', (e) => {
+                if (gameState.gameOver && !gameState.won) return;
+                
+                touchEndX = e.changedTouches[0].clientX;
+                touchEndY = e.changedTouches[0].clientY;
+                
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+                
+                // Определяем направление свайпа
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+                    if (dx > 0) {
+                        moveRight();
+                    } else {
+                        moveLeft();
+                    }
+                } else if (Math.abs(dy) > 30) {
+                    if (dy > 0) {
+                        moveDown();
+                    } else {
+                        moveUp();
+                    }
+                }
+            }, { passive: false });
+        }
+        
+        // Инициализация игры при загрузке
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>

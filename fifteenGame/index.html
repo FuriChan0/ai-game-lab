@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пятнашки</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #6b8e23 0%, #556b2f 100%);
+            color: #f5f5dc;
+            overflow-x: hidden;
+        }
+        
+        body.dark-theme {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a2530 100%);
+            color: #ecf0f1;
+        }
+        
+        .container {
+            background-color: rgba(240, 230, 140, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: auto;
+            max-width: 95vw;
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+            backdrop-filter: blur(5px);
+        }
+        
+        body.dark-theme .container {
+            background-color: rgba(52, 73, 94, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 36px;
+            color: #556b2f;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, color 0.3s;
+            font-weight: bold;
+        }
+        
+        h1:hover {
+            transform: scale(1.05);
+        }
+        
+        body.dark-theme h1 {
+            color: #27ae60;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: rgba(250, 240, 230, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            transition: transform 0.3s, background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .game-info:hover {
+            transform: translateY(-3px);
+        }
+        
+        body.dark-theme .game-info {
+            background-color: rgba(44, 62, 80, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .moves, .timer, .best-score {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            color: #556b2f;
+        }
+
+        body.dark-theme .moves,
+        body.dark-theme .timer,
+        body.dark-theme .best-score {
+            color: #27ae60;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, #deb887, #bdb76b);
+            border: none;
+            color: #556b2f;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(20, 20);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50, 50);
+                opacity: 0;
+            }
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:disabled {
+            background: linear-gradient(to bottom, #aaa, #888);
+            cursor: not-allowed;
+            transform: none;
+            color: #777;
+        }
+        
+        body.dark-theme button {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-theme button:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 4px;
+            width: 320px;
+            height: 320px;
+            background: linear-gradient(to bottom, #d2b48c, #bdb76b);
+            border: 3px solid #8b4513;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 5px;
+        }
+        
+        body.dark-theme .game-board {
+            background: linear-gradient(to bottom, #34495e, #2c3e50);
+            border-color: #1a5276;
+        }
+        
+        .tile {
+            background-color: #faf0e6;
+            border-radius: 6px;
+            border: 2px solid #bdb76b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #556b2f;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tile:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 10px rgba(107, 142, 35, 0.5);
+        }
+        
+        .tile.empty {
+            background-color: transparent;
+            border: 2px dashed #bdb76b;
+            box-shadow: none;
+            cursor: default;
+        }
+        
+        .tile.empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        body.dark-theme .tile {
+            background-color: #2c3e50;
+            border-color: #3498db;
+            color: #ecf0f1;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-theme .tile.empty {
+            background-color: transparent;
+            border-color: #3498db;
+        }
+        
+        .tile.moving {
+            animation: tileMove 0.3s ease;
+        }
+        
+        @keyframes tileMove {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        
+        .game-status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 24px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            font-size: 20px;
+        }
+        
+        .win {
+            color: #27ae60;
+            animation: winPulse 1s infinite alternate;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes winPulse {
+            from {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            to {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+        
+        .controls-info {
+            background-color: rgba(250, 240, 230, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: #556b2f;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        body.dark-theme .controls-info {
+            background-color: rgba(44, 62, 80, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            color: #27ae60;
+        }
+        
+        .controls-info h3 {
+            margin-bottom: 10px;
+            text-align: center;
+            color: #556b2f;
+        }
+        
+        body.dark-theme .controls-info h3 {
+            color: #27ae60;
+        }
+        
+        .theme-toggle {
+            margin-top: 20px;
+            background: rgba(250, 240, 230, 0.9);
+            border: 2px solid #bdb76b;
+            color: #556b2f;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .theme-toggle:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark-theme .theme-toggle {
+            background: rgba(44, 62, 80, 0.9);
+            border-color: #3498db;
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-icon {
+            transition: transform 0.5s;
+        }
+        
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(180deg);
+        }
+        
+        .difficulty {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .difficulty-btn {
+            background-color: #faf0e6;
+            transition: all 0.3s;
+        }
+        
+        .difficulty-btn.active {
+            background-color: #bdb76b;
+            transform: scale(1.1);
+        }
+        
+        body.dark-theme .difficulty-btn {
+            background-color: #2c3e50;
+        }
+        
+        body.dark-theme .difficulty-btn.active {
+            background-color: #27ae60;
+        }
+        
+        @media (max-width: 768px) {
+            .game-board {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .tile {
+                font-size: 24px;
+            }
+            
+            .container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 30px;
+            }
+            
+            .controls {
+                gap: 8px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-board {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .tile {
+                font-size: 20px;
+            }
+            
+            h1 {
+                font-size: 26px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+            }
+            
+            .difficulty {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .difficulty-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ПЯТНАШКИ</h1>
+        
+        <div class="game-info">
+            <div class="moves">Ходы: <span id="moves-count">0</span></div>
+            <div class="timer">Время: <span id="time">0</span></div>
+            <div class="best-score">Лучший: <span id="best-score">0</span></div>
+        </div>
+        
+        <div class="difficulty">
+            <button class="difficulty-btn active" data-difficulty="easy">Легко (3x3)</button>
+            <button class="difficulty-btn" data-difficulty="medium">Средне (4x4)</button>
+            <button class="difficulty-btn" data-difficulty="hard">Сложно (5x5)</button>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">Новая игра</button>
+            <button id="shuffle-btn">Перемешать</button>
+            <button id="solve-btn">Подсказка</button>
+        </div>
+        
+        <div class="game-board" id="game-board">
+            <!-- Игровое поле будет сгенерировано через JavaScript -->
+        </div>
+        
+        <div class="game-status" id="game-status"></div>
+        
+        <div class="controls-info">
+            <h3>Как играть:</h3>
+            <p>Перемещайте плитки, чтобы расположить их по порядку от 1 до 15</p>
+            <p>Пустая ячейка используется для перемещения соседних плиток</p>
+        </div>
+        
+        <button class="theme-toggle" id="theme-toggle">
+            <span class="theme-icon">🌓</span> Сменить тему
+        </button>
+    </div>
+
+    <script>
+        // Конфигурация игры
+        const DIFFICULTIES = {
+            easy: { size: 3, name: "3x3" },
+            medium: { size: 4, name: "4x4" },
+            hard: { size: 5, name: "5x5" }
+        };
+        
+        // Состояние игры
+        let gameState = {
+            board: [],
+            emptyPos: { row: 0, col: 0 },
+            size: 4,
+            moves: 0,
+            startTime: null,
+            timerInterval: null,
+            gameSolved: false,
+            theme: 'light',
+            difficulty: 'medium',
+            bestScores: JSON.parse(localStorage.getItem('fifteenBestScores')) || {
+                easy: { moves: 0, time: 0 },
+                medium: { moves: 0, time: 0 },
+                hard: { moves: 0, time: 0 }
+            }
+        };
+        
+        // Элементы DOM
+        const movesCountElement = document.getElementById('moves-count');
+        const timeElement = document.getElementById('time');
+        const bestScoreElement = document.getElementById('best-score');
+        const gameStatusElement = document.getElementById('game-status');
+        const newGameButton = document.getElementById('new-game-btn');
+        const shuffleButton = document.getElementById('shuffle-btn');
+        const solveButton = document.getElementById('solve-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        const body = document.body;
+        const gameBoard = document.getElementById('game-board');
+        
+        // Инициализация игры
+        function initGame() {
+            clearInterval(gameState.timerInterval);
+            
+            // Устанавливаем размер поля
+            gameState.size = DIFFICULTIES[gameState.difficulty].size;
+            
+            // Сбрасываем состояние игры
+            gameState.moves = 0;
+            gameState.startTime = null;
+            gameState.gameSolved = false;
+            
+            // Обновляем интерфейс
+            movesCountElement.textContent = '0';
+            timeElement.textContent = '0';
+            gameStatusElement.textContent = '';
+            gameStatusElement.classList.remove('win');
+            
+            // Обновляем лучший результат
+            updateBestScoreDisplay();
+            
+            // Настраиваем игровое поле
+            gameBoard.style.gridTemplateColumns = `repeat(${gameState.size}, 1fr)`;
+            gameBoard.style.gridTemplateRows = `repeat(${gameState.size}, 1fr)`;
+            gameBoard.style.width = `${gameState.size * 70 + 10}px`;
+            gameBoard.style.height = `${gameState.size * 70 + 10}px`;
+            
+            // Создаем игровое поле
+            createBoard();
+            
+            // Перемешиваем поле
+            shuffleBoard();
+            
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+        
+        // Создание игрового поля
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            gameState.board = [];
+            
+            let counter = 1;
+            for (let row = 0; row < gameState.size; row++) {
+                gameState.board[row] = [];
+                for (let col = 0; col < gameState.size; col++) {
+                    if (row === gameState.size - 1 && col === gameState.size - 1) {
+                        // Последняя ячейка пустая
+                        gameState.board[row][col] = 0;
+                        gameState.emptyPos = { row, col };
+                        
+                        const tile = document.createElement('div');
+                        tile.className = 'tile empty';
+                        tile.dataset.row = row;
+                        tile.dataset.col = col;
+                        gameBoard.appendChild(tile);
+                    } else {
+                        gameState.board[row][col] = counter++;
+                        
+                        const tile = document.createElement('div');
+                        tile.className = 'tile';
+                        tile.dataset.row = row;
+                        tile.dataset.col = col;
+                        tile.textContent = gameState.board[row][col];
+                        tile.addEventListener('click', () => handleTileClick(row, col));
+                        gameBoard.appendChild(tile);
+                    }
+                }
+            }
+        }
+        
+        // Перемешивание игрового поля
+        function shuffleBoard() {
+            // Выполняем множество случайных ходов для перемешивания
+            const shuffleMoves = gameState.size * 50;
+            
+            for (let i = 0; i < shuffleMoves; i++) {
+                const directions = [];
+                const { row, col } = gameState.emptyPos;
+                
+                // Определяем возможные направления движения
+                if (row > 0) directions.push('up');
+                if (row < gameState.size - 1) directions.push('down');
+                if (col > 0) directions.push('left');
+                if (col < gameState.size - 1) directions.push('right');
+                
+                // Выбираем случайное направление
+                const direction = directions[Math.floor(Math.random() * directions.length)];
+                
+                // Вычисляем позицию плитки для перемещения
+                let tileRow = row, tileCol = col;
+                
+                switch (direction) {
+                    case 'up': tileRow--; break;
+                    case 'down': tileRow++; break;
+                    case 'left': tileCol--; break;
+                    case 'right': tileCol++; break;
+                }
+                
+                // Перемещаем плитку
+                moveTile(tileRow, tileCol, false);
+            }
+            
+            gameState.moves = 0;
+            movesCountElement.textContent = '0';
+        }
+        
+        // Обработка клика по плитке
+        function handleTileClick(row, col) {
+            if (gameState.gameSolved) return;
+            
+            // Запускаем таймер при первом клике
+            if (gameState.startTime === null) {
+                gameState.startTime = Date.now();
+                startTimer();
+            }
+            
+            // Проверяем, можно ли переместить плитку
+            if (canMoveTile(row, col)) {
+                moveTile(row, col, true);
+                
+                // Проверяем, решена ли головоломка
+                checkSolved();
+            }
+        }
+        
+        // Проверка, можно ли переместить плитку
+        function canMoveTile(row, col) {
+            const { row: emptyRow, col: emptyCol } = gameState.emptyPos;
+            
+            // Плитка может быть перемещена, если она соседствует с пустой ячейкой
+            return (
+                (Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
+                (Math.abs(col - emptyCol) === 1 && row === emptyRow)
+            );
+        }
+        
+        // Перемещение плитки
+        function moveTile(row, col, countMove = true) {
+            const { row: emptyRow, col: emptyCol } = gameState.emptyPos;
+            
+            // Меняем местами плитку и пустую ячейку
+            gameState.board[emptyRow][emptyCol] = gameState.board[row][col];
+            gameState.board[row][col] = 0;
+            
+            // Обновляем позицию пустой ячейки
+            gameState.emptyPos = { row, col };
+            
+            // Обновляем отображение
+            updateBoardView();
+            
+            // Увеличиваем счетчик ходов
+            if (countMove) {
+                gameState.moves++;
+                movesCountElement.textContent = gameState.moves;
+            }
+        }
+        
+        // Обновление отображения игрового поля
+        function updateBoardView() {
+            // Очищаем поле
+            gameBoard.innerHTML = '';
+            
+            // Заполняем поле заново
+            for (let row = 0; row < gameState.size; row++) {
+                for (let col = 0; col < gameState.size; col++) {
+                    const value = gameState.board[row][col];
+                    
+                    if (value === 0) {
+                        // Пустая ячейка
+                        const tile = document.createElement('div');
+                        tile.className = 'tile empty';
+                        tile.dataset.row = row;
+                        tile.dataset.col = col;
+                        gameBoard.appendChild(tile);
+                    } else {
+                        // Обычная плитка
+                        const tile = document.createElement('div');
+                        tile.className = 'tile';
+                        tile.dataset.row = row;
+                        tile.dataset.col = col;
+                        tile.textContent = value;
+                        tile.addEventListener('click', () => handleTileClick(row, col));
+                        
+                        // Добавляем анимацию для перемещаемой плитки
+                        if (canMoveTile(row, col)) {
+                            tile.classList.add('moving');
+                            setTimeout(() => tile.classList.remove('moving'), 300);
+                        }
+                        
+                        gameBoard.appendChild(tile);
+                    }
+                }
+            }
+        }
+        
+        // Проверка, решена ли головоломка
+        function checkSolved() {
+            let counter = 1;
+            let solved = true;
+            
+            for (let row = 0; row < gameState.size; row++) {
+                for (let col = 0; col < gameState.size; col++) {
+                    // Последняя ячейка должна быть пустой
+                    if (row === gameState.size - 1 && col === gameState.size - 1) {
+                        if (gameState.board[row][col] !== 0) {
+                            solved = false;
+                        }
+                    } else {
+                        if (gameState.board[row][col] !== counter++) {
+                            solved = false;
+                        }
+                    }
+                    
+                    if (!solved) break;
+                }
+                if (!solved) break;
+            }
+            
+            if (solved) {
+                gameState.gameSolved = true;
+                clearInterval(gameState.timerInterval);
+                
+                const elapsedSeconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+                gameStatusElement.textContent = `Поздравляем! Решено за ${gameState.moves} ходов и ${elapsedSeconds} секунд!`;
+                gameStatusElement.classList.add('win');
+                
+                // Обновляем лучший результат, если текущий лучше
+                updateBestScore(gameState.moves, elapsedSeconds);
+            }
+        }
+        
+        // Обновление лучшего результата
+        function updateBestScore(moves, time) {
+            const currentBest = gameState.bestScores[gameState.difficulty];
+            
+            if (currentBest.moves === 0 || moves < currentBest.moves || 
+                (moves === currentBest.moves && time < currentBest.time)) {
+                gameState.bestScores[gameState.difficulty] = { moves, time };
+                localStorage.setItem('fifteenBestScores', JSON.stringify(gameState.bestScores));
+                updateBestScoreDisplay();
+            }
+        }
+        
+        // Обновление отображения лучшего результата
+        function updateBestScoreDisplay() {
+            const best = gameState.bestScores[gameState.difficulty];
+            if (best.moves > 0) {
+                bestScoreElement.textContent = `${best.moves} ходов, ${best.time} сек`;
+            } else {
+                bestScoreElement.textContent = 'Нет';
+            }
+        }
+        
+        // Запуск таймера
+        function startTimer() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState.timerInterval = setInterval(() => {
+                if (gameState.startTime) {
+                    const elapsedSeconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+                    timeElement.textContent = elapsedSeconds;
+                }
+            }, 1000);
+        }
+        
+        // Автоматическое решение (подсказка)
+        function showHint() {
+            if (gameState.gameSolved || gameState.moves === 0) return;
+            
+            // Находим первую неправильно расположенную плитку
+            let counter = 1;
+            for (let row = 0; row < gameState.size; row++) {
+                for (let col = 0; col < gameState.size; col++) {
+                    if (row === gameState.size - 1 && col === gameState.size - 1) {
+                        // Пропускаем пустую ячейку
+                        continue;
+                    }
+                    
+                    if (gameState.board[row][col] !== counter++) {
+                        // Находим, где должна быть эта плитка
+                        const targetRow = Math.floor((gameState.board[row][col] - 1) / gameState.size);
+                        const targetCol = (gameState.board[row][col] - 1) % gameState.size;
+                        
+                        // Подсвечиваем плитку, которую нужно переместить
+                        const tile = document.querySelector(`.tile[data-row="${row}"][data-col="${col}"]`);
+                        if (tile) {
+                            tile.style.boxShadow = '0 0 15px #ffcc00';
+                            setTimeout(() => {
+                                tile.style.boxShadow = '';
+                            }, 2000);
+                        }
+                        
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // Смена сложности
+        function setDifficulty(difficulty) {
+            gameState.difficulty = difficulty;
+            
+            // Обновляем активную кнопку
+            difficultyButtons.forEach(btn => {
+                if (btn.dataset.difficulty === difficulty) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Перезапускаем игру
+            initGame();
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            if (gameState.theme === 'light') {
+                gameState.theme = 'dark';
+                body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Светлая тема';
+            } else {
+                gameState.theme = 'light';
+                body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Тёмная тема';
+            }
+        }
+        
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            newGameButton.addEventListener('click', initGame);
+            
+            shuffleButton.addEventListener('click', () => {
+                shuffleBoard();
+                gameState.startTime = null;
+                clearInterval(gameState.timerInterval);
+                timeElement.textContent = '0';
+                gameStatusElement.textContent = '';
+                gameStatusElement.classList.remove('win');
+            });
+            
+            solveButton.addEventListener('click', showHint);
+            
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            difficultyButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setDifficulty(btn.dataset.difficulty);
+                });
+            });
+            
+            // Обработка клавиатуры
+            document.addEventListener('keydown', (e) => {
+                if (gameState.gameSolved) return;
+                
+                const { row, col } = gameState.emptyPos;
+                let tileRow = row, tileCol = col;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (row < gameState.size - 1) tileRow++;
+                        break;
+                    case 'ArrowDown':
+                        if (row > 0) tileRow--;
+                        break;
+                    case 'ArrowLeft':
+                        if (col < gameState.size - 1) tileCol++;
+                        break;
+                    case 'ArrowRight':
+                        if (col > 0) tileCol--;
+                        break;
+                    default:
+                        return;
+                }
+                
+                if (canMoveTile(tileRow, tileCol)) {
+                    if (gameState.startTime === null) {
+                        gameState.startTime = Date.now();
+                        startTimer();
+                    }
+                    
+                    moveTile(tileRow, tileCol, true);
+                    checkSolved();
+                }
+            });
+        }
+        
+        // Инициализация игры при загрузке
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>

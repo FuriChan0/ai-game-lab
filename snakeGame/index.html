@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Змейка</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #6b8e23 0%, #556b2f 100%);
+            color: #f5f5dc;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        
+        body.dark-theme {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a2530 100%);
+            color: #ecf0f1;
+        }
+        
+        .container {
+            background-color: rgba(240, 230, 140, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: auto;
+            max-width: 95vw;
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+            backdrop-filter: blur(5px);
+        }
+        
+        body.dark-theme .container {
+            background-color: rgba(52, 73, 94, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 36px;
+            color: #556b2f;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, color 0.3s;
+            font-weight: bold;
+        }
+        
+        h1:hover {
+            transform: scale(1.05);
+        }
+        
+        body.dark-theme h1 {
+            color: #27ae60;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: rgba(250, 240, 230, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            transition: transform 0.3s, background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .game-info:hover {
+            transform: translateY(-3px);
+        }
+        
+        body.dark-theme .game-info {
+            background-color: rgba(44, 62, 80, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .score, .high-score, .level {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            color: #556b2f;
+        }
+
+        body.dark-theme .score,
+        body.dark-theme .high-score,
+        body.dark-theme .level {
+            color: #27ae60;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, #deb887, #bdb76b);
+            border: none;
+            color: #556b2f;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(20, 20);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50, 50);
+                opacity: 0;
+            }
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:disabled {
+            background: linear-gradient(to bottom, #aaa, #888);
+            cursor: not-allowed;
+            transform: none;
+            color: #777;
+        }
+        
+        body.dark-theme button {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-theme button:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            grid-template-rows: repeat(20, 1fr);
+            gap: 1px;
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(to bottom, #d2b48c, #bdb76b);
+            border: 3px solid #8b4513;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        body.dark-theme .game-board {
+            background: linear-gradient(to bottom, #34495e, #2c3e50);
+            border-color: #1a5276;
+        }
+        
+        .cell {
+            background-color: rgba(245, 245, 220, 0.7);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+            transition: all 0.2s;
+        }
+        
+        body.dark-theme .cell {
+            background-color: rgba(44, 62, 80, 0.7);
+            border-color: rgba(26, 82, 118, 0.3);
+        }
+        
+        .snake {
+            background-color: #556b2f;
+            border-radius: 25%;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-theme .snake {
+            background-color: #27ae60;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .snake-head {
+            background-color: #6b8e23;
+            border-radius: 35%;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        body.dark-theme .snake-head {
+            background-color: #2ecc71;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+        }
+        
+        .food {
+            background-color: #c44;
+            border-radius: 50%;
+            animation: pulse 0.8s infinite alternate;
+            box-shadow: 0 0 5px rgba(200, 68, 68, 0.5);
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(0.9); }
+            to { transform: scale(1.1); }
+        }
+        
+        body.dark-theme .food {
+            background-color: #e74c3c;
+            box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+        }
+        
+        .game-status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 24px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            font-size: 20px;
+        }
+        
+        .game-over {
+            color: #c44;
+            animation: gameOverPulse 0.8s infinite alternate;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes gameOverPulse {
+            from {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            to {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+        
+        .controls-info {
+            background-color: rgba(250, 240, 230, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: #556b2f;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        body.dark-theme .controls-info {
+            background-color: rgba(44, 62, 80, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            color: #27ae60;
+        }
+        
+        .controls-info h3 {
+            margin-bottom: 10px;
+            text-align: center;
+            color: #556b2f;
+        }
+        
+        body.dark-theme .controls-info h3 {
+            color: #27ae60;
+        }
+        
+        .theme-toggle {
+            margin-top: 20px;
+            background: rgba(250, 240, 230, 0.9);
+            border: 2px solid #bdb76b;
+            color: #556b2f;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .theme-toggle:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark-theme .theme-toggle {
+            background: rgba(44, 62, 80, 0.9);
+            border-color: #3498db;
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-icon {
+            transition: transform 0.5s;
+        }
+        
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(180deg);
+        }
+        
+        .mobile-controls {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #deb887, #bdb76b);
+            border: none;
+            color: #556b2f;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            margin: 0 auto;
+        }
+        
+        .mobile-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark-theme .mobile-btn {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: #ecf0f1;
+        }
+        
+        #up-btn {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        
+        #left-btn {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        #right-btn {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        #down-btn {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: grid;
+            }
+            
+            .game-board {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 30px;
+            }
+            
+            .controls {
+                gap: 8px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-board {
+                width: 280px;
+                height: 280px;
+            }
+            
+            h1 {
+                font-size: 26px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ЗМЕЙКА</h1>
+        
+        <div class="game-info">
+            <div class="score">Счет: <span id="score">0</span></div>
+            <div class="high-score">Рекорд: <span id="high-score">0</span></div>
+            <div class="level">Уровень: <span id="level">1</span></div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">Новая игра</button>
+            <button id="pause-btn">Пауза</button>
+        </div>
+        
+        <div class="game-board" id="game-board">
+            <!-- Игровое поле будет сгенерировано через JavaScript -->
+        </div>
+        
+        <div class="mobile-controls">
+            <button class="mobile-btn" id="up-btn">↑</button>
+            <button class="mobile-btn" id="left-btn">←</button>
+            <button class="mobile-btn" id="down-btn">↓</button>
+            <button class="mobile-btn" id="right-btn">→</button>
+        </div>
+        
+        <div class="game-status" id="game-status"></div>
+        
+        <div class="controls-info">
+            <h3>Управление:</h3>
+            <p>← ↑ → ↓: Движение змейки</p>
+            <p>Пробел: Пауза</p>
+            <p>Собирайте еду (красные кружки), избегайте стен и собственного хвоста!</p>
+        </div>
+        
+        <button class="theme-toggle" id="theme-toggle">
+            <span class="theme-icon">🌓</span> Сменить тему
+        </button>
+    </div>
+
+    <script>
+        // Константы игры
+        const GRID_SIZE = 20;
+        const INITIAL_SPEED = 150;
+        const SPEED_DECREMENT = 5;
+        const MIN_SPEED = 50;
+        const POINTS_PER_FOOD = 10;
+        const LEVEL_UP_SCORE = 100;
+        
+        // Состояние игры
+        let gameState = {
+            snake: [],
+            direction: 'right',
+            nextDirection: 'right',
+            food: null,
+            score: 0,
+            highScore: localStorage.getItem('snakeHighScore') || 0,
+            level: 1,
+            gameOver: false,
+            paused: false,
+            theme: 'light',
+            intervalId: null,
+            speed: INITIAL_SPEED,
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        };
+        
+        // Элементы DOM
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('high-score');
+        const levelElement = document.getElementById('level');
+        const gameStatusElement = document.getElementById('game-status');
+        const newGameButton = document.getElementById('new-game-btn');
+        const pauseButton = document.getElementById('pause-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const gameBoard = document.getElementById('game-board');
+        
+        // Мобильные кнопки
+        const upBtn = document.getElementById('up-btn');
+        const downBtn = document.getElementById('down-btn');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        
+        // Инициализация игры
+        function initGame() {
+            clearInterval(gameState.intervalId);
+            
+            // Сбрасываем состояние игры
+            gameState.snake = [
+                { x: 10, y: 10 }, // голова
+                { x: 9, y: 10 },  // тело
+                { x: 8, y: 10 }   // тело
+            ];
+            gameState.direction = 'right';
+            gameState.nextDirection = 'right';
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.gameOver = false;
+            gameState.paused = false;
+            gameState.speed = INITIAL_SPEED;
+            
+            // Обновляем интерфейс
+            scoreElement.textContent = '0';
+            levelElement.textContent = '1';
+            highScoreElement.textContent = gameState.highScore;
+            gameStatusElement.textContent = '';
+            gameStatusElement.classList.remove('game-over');
+            pauseButton.textContent = 'Пауза';
+            
+            // Создаем игровое поле
+            createGameBoard();
+            
+            // Генерируем первую еду
+            generateFood();
+            
+            // Отрисовываем игру
+            draw();
+            
+            // Запускаем игровой цикл
+            startGameLoop();
+            
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+        
+        // Создание игрового поля
+        function createGameBoard() {
+            gameBoard.innerHTML = '';
+            
+            // Создаем клетки для игрового поля
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${r}-${c}`;
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+        
+        // Генерация еды
+        function generateFood() {
+            let foodPosition;
+            let isOnSnake;
+            
+            do {
+                isOnSnake = false;
+                foodPosition = {
+                    x: Math.floor(Math.random() * GRID_SIZE),
+                    y: Math.floor(Math.random() * GRID_SIZE)
+                };
+                
+                // Проверяем, не находится ли еда на змейке
+                for (const segment of gameState.snake) {
+                    if (segment.x === foodPosition.x && segment.y === foodPosition.y) {
+                        isOnSnake = true;
+                        break;
+                    }
+                }
+            } while (isOnSnake);
+            
+            gameState.food = foodPosition;
+        }
+        
+        // Отрисовка игры
+        function draw() {
+            // Очищаем игровое поле
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    cell.className = 'cell';
+                }
+            }
+            
+            // Отрисовываем змейку
+            for (let i = 0; i < gameState.snake.length; i++) {
+                const segment = gameState.snake[i];
+                const cell = document.getElementById(`cell-${segment.y}-${segment.x}`);
+                
+                if (cell) {
+                    if (i === 0) {
+                        cell.classList.add('snake-head');
+                    } else {
+                        cell.classList.add('snake');
+                    }
+                }
+            }
+            
+            // Отрисовываем еду
+            if (gameState.food) {
+                const foodCell = document.getElementById(`cell-${gameState.food.y}-${gameState.food.x}`);
+                if (foodCell) {
+                    foodCell.classList.add('food');
+                }
+            }
+        }
+        
+        // Движение змейки
+        function moveSnake() {
+            if (gameState.gameOver || gameState.paused) return;
+            
+            // Обновляем направление
+            gameState.direction = gameState.nextDirection;
+            
+            // Сохраняем текущую позицию головы
+            const head = { ...gameState.snake[0] };
+            
+            // Двигаем голову в зависимости от направления
+            switch (gameState.direction) {
+                case 'up':
+                    head.y -= 1;
+                    break;
+                case 'down':
+                    head.y += 1;
+                    break;
+                case 'left':
+                    head.x -= 1;
+                    break;
+                case 'right':
+                    head.x += 1;
+                    break;
+            }
+            
+            // Проверяем столкновение со стеной
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                handleGameOver();
+                return;
+            }
+            
+            // Проверяем столкновение с собой
+            for (let i = 0; i < gameState.snake.length; i++) {
+                if (gameState.snake[i].x === head.x && gameState.snake[i].y === head.y) {
+                    handleGameOver();
+                    return;
+                }
+            }
+            
+            // Добавляем новую голову
+            gameState.snake.unshift(head);
+            
+            // Проверяем, съела ли змейка еду
+            if (head.x === gameState.food.x && head.y === gameState.food.y) {
+                // Увеличиваем счет
+                gameState.score += POINTS_PER_FOOD;
+                scoreElement.textContent = gameState.score;
+                
+                // Проверяем, нужно ли повысить уровень
+                if (gameState.score >= gameState.level * LEVEL_UP_SCORE) {
+                    gameState.level++;
+                    levelElement.textContent = gameState.level;
+                    
+                    // Увеличиваем скорость
+                    gameState.speed = Math.max(MIN_SPEED, gameState.speed - SPEED_DECREMENT);
+                    clearInterval(gameState.intervalId);
+                    startGameLoop();
+                }
+                
+                // Обновляем рекорд
+                if (gameState.score > gameState.highScore) {
+                    gameState.highScore = gameState.score;
+                    highScoreElement.textContent = gameState.highScore;
+                    localStorage.setItem('snakeHighScore', gameState.highScore);
+                }
+                
+                // Генерируем новую еду
+                generateFood();
+            } else {
+                // Убираем хвост, если не съели еду
+                gameState.snake.pop();
+            }
+            
+            // Перерисовываем игру
+            draw();
+        }
+        
+        // Обработка завершения игры
+        function handleGameOver() {
+            gameState.gameOver = true;
+            gameStatusElement.textContent = 'Игра окончена!';
+            gameStatusElement.classList.add('game-over');
+            clearInterval(gameState.intervalId);
+        }
+        
+        // Пауза/продолжение игры
+        function togglePause() {
+            if (gameState.gameOver) return;
+            
+            gameState.paused = !gameState.paused;
+            
+            if (gameState.paused) {
+                clearInterval(gameState.intervalId);
+                pauseButton.textContent = 'Продолжить';
+                gameStatusElement.textContent = 'Пауза';
+            } else {
+                startGameLoop();
+                pauseButton.textContent = 'Пауза';
+                gameStatusElement.textContent = '';
+            }
+        }
+        
+        // Запуск игрового цикла
+        function startGameLoop() {
+            clearInterval(gameState.intervalId);
+            
+            if (!gameState.paused && !gameState.gameOver) {
+                gameState.intervalId = setInterval(() => {
+                    moveSnake();
+                }, gameState.speed);
+            }
+        }
+        
+        // Обработка нажатий клавиш
+        function handleKeyDown(e) {
+            if (gameState.gameOver) return;
+            
+            // Предотвращаем прокрутку страницы при использовании стрелок
+            if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+            
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (gameState.direction !== 'down') {
+                        gameState.nextDirection = 'up';
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (gameState.direction !== 'up') {
+                        gameState.nextDirection = 'down';
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (gameState.direction !== 'right') {
+                        gameState.nextDirection = 'left';
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (gameState.direction !== 'left') {
+                        gameState.nextDirection = 'right';
+                    }
+                    break;
+                case ' ':
+                    togglePause();
+                    break;
+            }
+        }
+        
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            // Обработка клавиатуры
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // Кнопки управления
+            newGameButton.addEventListener('click', initGame);
+            pauseButton.addEventListener('click', togglePause);
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // Мобильные кнопки
+            upBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'down') {
+                    gameState.nextDirection = 'up';
+                }
+            });
+            
+            downBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'up') {
+                    gameState.nextDirection = 'down';
+                }
+            });
+            
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'right') {
+                    gameState.nextDirection = 'left';
+                }
+            });
+            
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'left') {
+                    gameState.nextDirection = 'right';
+                }
+            });
+            
+            // Также добавим обработчики для кликов (на случай тачпадов)
+            upBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'down') {
+                    gameState.nextDirection = 'up';
+                }
+            });
+            
+            downBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'up') {
+                    gameState.nextDirection = 'down';
+                }
+            });
+            
+            leftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'right') {
+                    gameState.nextDirection = 'left';
+                }
+            });
+            
+            rightBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (gameState.direction !== 'left') {
+                    gameState.nextDirection = 'right';
+                }
+            });
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            if (gameState.theme === 'light') {
+                gameState.theme = 'dark';
+                body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Светлая тема';
+            } else {
+                gameState.theme = 'light';
+                body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Тёмная тема';
+            }
+            
+            // Перерисовываем игру при смене темы
+            draw();
+        }
+        
+        // Инициализация игры при загрузке
+        window.addEventListener('load', () => {
+            highScoreElement.textContent = gameState.highScore;
+            initGame();
+        });
+    </script>
+</body>
+</html>

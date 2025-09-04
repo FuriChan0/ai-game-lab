@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Арканоид</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: #f5f5dc;
+            color: #556b2f;
+        }
+        
+        body.dark-theme {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        
+        .container {
+            background-color: #f0e68c;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: auto;
+            max-width: 95vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        body.dark-theme .container {
+            background-color: #34495e;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #6b8e23;
+        }
+        
+        body.dark-theme h1 {
+            color: #27ae60;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background-color: #faf0e6;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        body.dark-theme .game-info {
+            background-color: #2c3e50;
+        }
+        
+        .score, .lives, .level {
+            font-size: 18px;
+            font-weight: bold;
+            color: #556b2f;
+        }
+        
+        body.dark-theme .score,
+        body.dark-theme .lives,
+        body.dark-theme .level {
+            color: #27ae60;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        
+        button {
+            background-color: #deb887;
+            border: none;
+            color: #556b2f;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background-color: #bdb76b;
+            transform: translateY(-2px);
+        }
+        
+        body.dark-theme button {
+            background-color: #3498db;
+            color: #ecf0f1;
+        }
+        
+        .theme-toggle {
+            margin-top: 10px;
+            background: none;
+            border: 2px solid #bdb76b;
+            color: #556b2f;
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        body.dark-theme .theme-toggle {
+            border-color: #3498db;
+            color: #ecf0f1;
+        }
+        
+        .game-area {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            background: #2c3e50;
+            border: 3px solid #8b4513;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        body.dark-theme .game-area {
+            background: #1a2530;
+            border-color: #3498db;
+        }
+        
+        .wall {
+            position: absolute;
+            background-color: rgba(139, 69, 19, 0.3);
+        }
+        
+        .wall.left, .wall.right {
+            width: 5px;
+            height: 100%;
+            top: 0;
+        }
+        
+        .wall.left {
+            left: 0;
+        }
+        
+        .wall.right {
+            right: 0;
+        }
+        
+        .wall.top {
+            width: 100%;
+            height: 5px;
+            top: 0;
+            left: 0;
+        }
+        
+        .paddle {
+            position: absolute;
+            width: 80px;
+            height: 15px;
+            background: linear-gradient(to bottom, #deb887, #bdb76b);
+            border-radius: 5px;
+            bottom: 20px;
+            left: 160px;
+        }
+        
+        body.dark-theme .paddle {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+        }
+        
+        .ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: linear-gradient(135deg, #ff7f50, #ff6347);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(255, 99, 71, 0.7);
+        }
+        
+        body.dark-theme .ball {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 0 5px rgba(231, 76, 60, 0.7);
+        }
+        
+        .brick {
+            position: absolute;
+            width: 60px;
+            height: 20px;
+            border-radius: 3px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .brick.red { background: linear-gradient(to bottom, #ff6b6b, #ee5a52); }
+        .brick.blue { background: linear-gradient(to bottom, #48dbfb, #2e86de); }
+        .brick.green { background: linear-gradient(to bottom, #1dd1a1, #10ac84); }
+        .brick.yellow { background: linear-gradient(to bottom, #feca57, #ff9f43); }
+        .brick.purple { background: linear-gradient(to bottom, #9b59b6, #8e44ad); }
+        .brick.orange { background: linear-gradient(to bottom, #ff9f43, #ff7f50); }
+        .brick.cyan { background: linear-gradient(to bottom, #00cec9, #00b894); }
+        
+        body.dark-theme .brick.red { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
+        body.dark-theme .brick.blue { background: linear-gradient(to bottom, #3498db, #2980b9); }
+        body.dark-theme .brick.green { background: linear-gradient(to bottom, #2ecc71, #27ae60); }
+        body.dark-theme .brick.yellow { background: linear-gradient(to bottom, #f1c40f, #f39c12); }
+        body.dark-theme .brick.purple { background: linear-gradient(to bottom, #9b59b6, #8e44ad); }
+        body.dark-theme .brick.orange { background: linear-gradient(to bottom, #e67e22, #d35400); }
+        body.dark-theme .brick.cyan { background: linear-gradient(to bottom, #00cec9, #00b894); }
+        
+        .game-status {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+            color: #6b8e23;
+        }
+        
+        body.dark-theme .game-status {
+            color: #27ae60;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            text-align: center;
+            color: #6b8e23;
+            font-size: 14px;
+            padding: 10px;
+            background-color: rgba(245, 245, 220, 0.8);
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        body.dark-theme .instructions {
+            color: #bdc3c7;
+            background-color: rgba(44, 62, 80, 0.8);
+        }
+        
+        .mobile-controls {
+            display: none;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #deb887;
+            border: none;
+            color: #556b2f;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark-theme .mobile-btn {
+            background: #3498db;
+            color: #ecf0f1;
+        }
+        
+        @media (max-width: 768px) {
+            .game-area {
+                width: 320px;
+                height: 400px;
+            }
+            
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .brick {
+                width: 50px;
+                height: 18px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-area {
+                width: 280px;
+                height: 350px;
+            }
+            
+            .brick {
+                width: 40px;
+                height: 15px;
+            }
+            
+            .paddle {
+                width: 60px;
+                height: 12px;
+            }
+            
+            .ball {
+                width: 12px;
+                height: 12px;
+            }
+        }
+        
+        /* Анимации */
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .flash {
+            animation: flash 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>АРКАНОИД</h1>
+        
+        <div class="game-info">
+            <div class="score">Счет: <span id="score">0</span></div>
+            <div class="lives">Жизни: <span id="lives">3</span></div>
+            <div class="level">Уровень: <span id="level">1</span></div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">Новая игра</button>
+            <button id="pause-btn">Пауза</button>
+        </div>
+        
+        <div class="game-area" id="game-area">
+            <div class="wall left"></div>
+            <div class="wall right"></div>
+            <div class="wall top"></div>
+            <div class="paddle" id="paddle"></div>
+            <div class="ball" id="ball"></div>
+            <!-- Кирпичи будут добавляться через JavaScript -->
+        </div>
+        
+        <div class="mobile-controls">
+            <button class="mobile-btn" id="left-btn">←</button>
+            <button class="mobile-btn" id="right-btn">→</button>
+        </div>
+        
+        <div class="game-status" id="game-status"></div>
+        
+        <div class="instructions">
+            <p>Используйте мышь или клавиши ← → для движения платформы</p>
+            <p>Разбейте все кирпичи, не дайте шарику упасть!</p>
+        </div>
+        
+        <button class="theme-toggle" id="theme-toggle">
+            <span class="theme-icon">🌓</span> Сменить тему
+        </button>
+    </div>
+
+    <script>
+        // Конфигурация игры
+        const BRICK_COLS = 7;
+        const BRICK_GAP = 5;
+        const MAX_LEVELS = 20;
+        
+        // Цвета кирпичей
+        const BRICK_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan'];
+        
+        // Состояние игры
+        let gameState = {
+            score: 0,
+            lives: 3,
+            level: 1,
+            gameOver: false,
+            paused: false,
+            ballX: 0,
+            ballY: 0,
+            ballSpeedX: 3,
+            ballSpeedY: -3,
+            paddleX: 0,
+            paddleWidth: 80,
+            bricks: [],
+            animationId: null,
+            theme: 'light',
+            lastTime: 0,
+            deltaTime: 0
+        };
+        
+        // Элементы DOM
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const levelElement = document.getElementById('level');
+        const gameStatusElement = document.getElementById('game-status');
+        const newGameButton = document.getElementById('new-game-btn');
+        const pauseButton = document.getElementById('pause-btn');
+        const leftButton = document.getElementById('left-btn');
+        const rightButton = document.getElementById('right-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const gameArea = document.getElementById('game-area');
+        const paddle = document.getElementById('paddle');
+        const ball = document.getElementById('ball');
+        const body = document.body;
+        
+        // Инициализация игры
+        function initGame() {
+            cancelAnimationFrame(gameState.animationId);
+            
+            // Сбрасываем состояние игры
+            gameState.score = 0;
+            gameState.lives = 3;
+            gameState.level = 1;
+            gameState.gameOver = false;
+            gameState.paused = false;
+            gameState.ballSpeedX = 3;
+            gameState.ballSpeedY = -3;
+            
+            // Обновляем интерфейс
+            scoreElement.textContent = '0';
+            livesElement.textContent = '3';
+            levelElement.textContent = '1';
+            gameStatusElement.textContent = '';
+            pauseButton.textContent = 'Пауза';
+            
+            // Очищаем кирпичи
+            gameState.bricks = [];
+            document.querySelectorAll('.brick').forEach(brick => brick.remove());
+            
+            // Устанавливаем начальные позиции
+            resetPositions();
+            
+            // Создаем кирпичи для текущего уровня
+            generateLevel(gameState.level);
+            
+            // Запускаем игровой цикл
+            gameState.lastTime = performance.now();
+            gameState.animationId = requestAnimationFrame(gameLoop);
+            
+            // Добавляем обработчики событий
+            addEventListeners();
+        }
+        
+        // Генерация случайного уровня
+        function generateLevel(level) {
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const brickWidth = (gameAreaRect.width - (BRICK_COLS + 1) * BRICK_GAP) / BRICK_COLS;
+            
+            // Определяем количество рядов в зависимости от уровня
+            const rows = Math.min(3 + Math.floor(level / 2), 8);
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < BRICK_COLS; col++) {
+                    // Случайное решение о создании кирпича (чем выше уровень, тем больше кирпичей)
+                    const brickChance = 0.7 + (level * 0.03);
+                    if (Math.random() > brickChance) continue;
+                    
+                    const brick = document.createElement('div');
+                    // Случайный цвет кирпича
+                    const color = BRICK_COLORS[Math.floor(Math.random() * BRICK_COLORS.length)];
+                    brick.className = `brick ${color}`;
+                    
+                    const x = BRICK_GAP + col * (brickWidth + BRICK_GAP);
+                    const y = BRICK_GAP + row * (25 + BRICK_GAP);
+                    
+                    brick.style.left = `${x}px`;
+                    brick.style.top = `${y}px`;
+                    brick.style.width = `${brickWidth}px`;
+                    
+                    gameArea.appendChild(brick);
+                    
+                    gameState.bricks.push({
+                        element: brick,
+                        x: x,
+                        y: y,
+                        width: brickWidth,
+                        height: 20,
+                        color: color,
+                        visible: true
+                    });
+                }
+            }
+            
+            // Если уровень слишком пустой, добавляем еще кирпичей
+            if (gameState.bricks.length < 5) {
+                generateLevel(level);
+            }
+        }
+        
+        // Сброс позиций
+        function resetPositions() {
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            // Позиция платформы
+            gameState.paddleX = gameAreaRect.width / 2 - gameState.paddleWidth / 2;
+            paddle.style.left = `${gameState.paddleX}px`;
+            
+            // Позиция мяча
+            gameState.ballX = gameAreaRect.width / 2 - 7.5;
+            gameState.ballY = gameAreaRect.height - 40;
+            ball.style.left = `${gameState.ballX}px`;
+            ball.style.top = `${gameState.ballY}px`;
+            
+            // Начальная скорость мяча (немного увеличивается с уровнем)
+            const speed = 3 + Math.min(gameState.level * 0.2, 5);
+            gameState.ballSpeedX = speed * (Math.random() > 0.5 ? 1 : -1);
+            gameState.ballSpeedY = -speed;
+        }
+        
+        // Игровой цикл
+        function gameLoop(timestamp) {
+            if (gameState.gameOver || gameState.paused) {
+                gameState.animationId = requestAnimationFrame(gameLoop);
+                return;
+            }
+            
+            // Вычисляем разницу времени для плавного движения
+            gameState.deltaTime = timestamp - gameState.lastTime;
+            gameState.lastTime = timestamp;
+            
+            // Двигаем мяч с учетом времени для постоянной скорости
+            const speedFactor = gameState.deltaTime / 16.67; // Нормализуем к 60 FPS
+            gameState.ballX += gameState.ballSpeedX * speedFactor;
+            gameState.ballY += gameState.ballSpeedY * speedFactor;
+            
+            // Получаем размеры игровой области
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const ballSize = 15; // Размер мяча
+            
+            // Проверяем столкновение с боковыми стенками
+            if (gameState.ballX <= 5) { // Левая стенка
+                gameState.ballX = 5;
+                gameState.ballSpeedX = Math.abs(gameState.ballSpeedX);
+            } else if (gameState.ballX + ballSize >= gameAreaRect.width - 5) { // Правая стенка
+                gameState.ballX = gameAreaRect.width - ballSize - 5;
+                gameState.ballSpeedX = -Math.abs(gameState.ballSpeedX);
+            }
+            
+            // Проверяем столкновение с верхней стенкой
+            if (gameState.ballY <= 5) {
+                gameState.ballY = 5;
+                gameState.ballSpeedY = Math.abs(gameState.ballSpeedY);
+            }
+            
+            // Проверяем столкновение с нижней стенкой
+            if (gameState.ballY + ballSize >= gameAreaRect.height) {
+                // Игрок пропустил мяч
+                gameState.lives--;
+                livesElement.textContent = gameState.lives;
+                
+                if (gameState.lives <= 0) {
+                    handleGameOver();
+                } else {
+                    resetBall();
+                }
+            }
+            
+            // Проверяем столкновение с платформой
+            const paddleTop = gameAreaRect.height - 35; // Позиция верхней части платформы
+            const paddleBottom = gameAreaRect.height - 20; // Позиция нижней части платформы
+            
+            if (
+                gameState.ballY + ballSize >= paddleTop &&
+                gameState.ballY <= paddleBottom &&
+                gameState.ballX + ballSize >= gameState.paddleX &&
+                gameState.ballX <= gameState.paddleX + gameState.paddleWidth
+            ) {
+                // Меняем направление мяча в зависимости от того, в какую часть платформы попал мяч
+                const hitPosition = (gameState.ballX + ballSize / 2 - gameState.paddleX) / gameState.paddleWidth;
+                gameState.ballSpeedX = (hitPosition - 0.5) * 10;
+                gameState.ballSpeedY = -Math.abs(gameState.ballSpeedY); // Всегда вверх
+                
+                // Визуальный эффект
+                paddle.classList.add('flash');
+                setTimeout(() => paddle.classList.remove('flash'), 300);
+            }
+            
+            // Проверяем столкновение с кирпичами
+            checkBrickCollisions();
+            
+            // Обновляем позицию мяча
+            ball.style.left = `${gameState.ballX}px`;
+            ball.style.top = `${gameState.ballY}px`;
+            
+            // Проверяем, выиграл ли игрок уровень
+            checkLevelComplete();
+            
+            // Продолжаем игровой цикл
+            gameState.animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Проверка столкновений с кирпичами
+        function checkBrickCollisions() {
+            const ballSize = 15; // Размер мяча
+            
+            for (let i = 0; i < gameState.bricks.length; i++) {
+                const brick = gameState.bricks[i];
+                
+                if (!brick.visible) continue;
+                
+                if (
+                    gameState.ballX + ballSize >= brick.x &&
+                    gameState.ballX <= brick.x + brick.width &&
+                    gameState.ballY + ballSize >= brick.y &&
+                    gameState.ballY <= brick.y + brick.height
+                ) {
+                    // Столкновение с кирпичом!
+                    brick.visible = false;
+                    brick.element.style.display = 'none';
+                    
+                    // Определяем, с какой стороны произошло столкновение
+                    const ballCenterX = gameState.ballX + ballSize / 2;
+                    const ballCenterY = gameState.ballY + ballSize / 2;
+                    const brickCenterX = brick.x + brick.width / 2;
+                    const brickCenterY = brick.y + brick.height / 2;
+                    
+                    // Вычисляем разницу между центрами
+                    const dx = ballCenterX - brickCenterX;
+                    const dy = ballCenterY - brickCenterY;
+                    
+                    // Определяем, какая сторона кирпича была поражена
+                    const combinedHalfWidths = brick.width / 2 + ballSize / 2;
+                    const combinedHalfHeights = brick.height / 2 + ballSize / 2;
+                    
+                    if (Math.abs(dx) * 2 < combinedHalfWidths && Math.abs(dy) * 2 < combinedHalfHeights) {
+                        // Столкновение с боковой стороной
+                        gameState.ballSpeedX = -gameState.ballSpeedX;
+                    } else {
+                        // Столкновение с верхней/нижней стороной
+                        gameState.ballSpeedY = -gameState.ballSpeedY;
+                    }
+                    
+                    // Увеличиваем счет
+                    gameState.score += 10;
+                    scoreElement.textContent = gameState.score;
+                    
+                    // Визуальный эффект
+                    ball.classList.add('flash');
+                    setTimeout(() => ball.classList.remove('flash'), 300);
+                    
+                    break;
+                }
+            }
+        }
+        
+        // Проверка завершения уровня
+        function checkLevelComplete() {
+            const visibleBricks = gameState.bricks.filter(brick => brick.visible);
+            
+            if (visibleBricks.length === 0) {
+                // Уровень завершен!
+                if (gameState.level < MAX_LEVELS) {
+                    // Переходим на следующий уровень
+                    gameState.level++;
+                    levelElement.textContent = gameState.level;
+                    
+                    // Создаем новые кирпичи
+                    generateLevel(gameState.level);
+                    resetBall();
+                    
+                    // Сообщение о завершении уровня
+                    gameStatusElement.textContent = `Уровень ${gameState.level-1} завершен!`;
+                    setTimeout(() => {
+                        gameStatusElement.textContent = '';
+                    }, 2000);
+                } else {
+                    // Все уровни пройдены!
+                    gameStatusElement.textContent = 'Поздравляем! Вы прошли все уровни!';
+                    gameState.paused = true;
+                    pauseButton.textContent = 'Продолжить';
+                }
+            }
+        }
+        
+        // Сброс мяча
+        function resetBall() {
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            // Позиция мяча
+            gameState.ballX = gameAreaRect.width / 2 - 7.5;
+            gameState.ballY = gameAreaRect.height - 40;
+            
+            // Случайное направление
+            const speed = 3 + Math.min(gameState.level * 0.2, 5);
+            gameState.ballSpeedX = speed * (Math.random() > 0.5 ? 1 : -1);
+            gameState.ballSpeedY = -speed;
+        }
+        
+        // Обработка завершения игры
+        function handleGameOver() {
+            gameState.gameOver = true;
+            gameStatusElement.textContent = 'Игра окончена! Нажмите "Новая игра"';
+        }
+        
+        // Пауза/продолжение игры
+        function togglePause() {
+            if (gameState.gameOver) return;
+            
+            gameState.paused = !gameState.paused;
+            
+            if (gameState.paused) {
+                pauseButton.textContent = 'Продолжить';
+                gameStatusElement.textContent = 'Пауза';
+            } else {
+                pauseButton.textContent = 'Пауза';
+                gameStatusElement.textContent = '';
+                gameState.lastTime = performance.now();
+                gameState.animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Движение платформы
+        function movePaddle(delta) {
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            gameState.paddleX += delta;
+            
+            // Не даем платформе выйти за границы
+            if (gameState.paddleX < 5) {
+                gameState.paddleX = 5;
+            } else if (gameState.paddleX + gameState.paddleWidth > gameAreaRect.width - 5) {
+                gameState.paddleX = gameAreaRect.width - gameState.paddleWidth - 5;
+            }
+            
+            paddle.style.left = `${gameState.paddleX}px`;
+        }
+        
+        // Обработка движения мыши
+        function handleMouseMove(e) {
+            if (gameState.gameOver || gameState.paused) return;
+            
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            // Вычисляем позицию платформы относительно игровой области
+            const mouseX = e.clientX - gameAreaRect.left - gameState.paddleWidth / 2;
+            
+            // Устанавливаем позицию платформы
+            if (mouseX >= 5 && mouseX <= gameAreaRect.width - gameState.paddleWidth - 5) {
+                gameState.paddleX = mouseX;
+                paddle.style.left = `${gameState.paddleX}px`;
+            }
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            if (gameState.theme === 'light') {
+                gameState.theme = 'dark';
+                body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Светлая тема';
+            } else {
+                gameState.theme = 'light';
+                body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<span class="theme-icon">🌓</span> Тёмная тема';
+            }
+        }
+        
+        // Добавление обработчиков событий
+        function addEventListeners() {
+            // Обработка движения мыши
+            gameArea.addEventListener('mousemove', handleMouseMove);
+            
+            // Обработка касаний для мобильных устройств
+            gameArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                handleMouseMove(e.touches[0]);
+            });
+            
+            // Кнопки управления
+            newGameButton.addEventListener('click', initGame);
+            pauseButton.addEventListener('click', togglePause);
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // Мобильные кнопки
+            leftButton.addEventListener('mousedown', () => {
+                if (gameState.gameOver || gameState.paused) return;
+                gameState.paddleInterval = setInterval(() => movePaddle(-10), 16);
+            });
+            
+            leftButton.addEventListener('mouseup', () => {
+                clearInterval(gameState.paddleInterval);
+            });
+            
+            leftButton.addEventListener('touchstart', () => {
+                if (gameState.gameOver || gameState.paused) return;
+                gameState.paddleInterval = setInterval(() => movePaddle(-10), 16);
+            });
+            
+            leftButton.addEventListener('touchend', () => {
+                clearInterval(gameState.paddleInterval);
+            });
+            
+            rightButton.addEventListener('mousedown', () => {
+                if (gameState.gameOver || gameState.paused) return;
+                gameState.paddleInterval = setInterval(() => movePaddle(10), 16);
+            });
+            
+            rightButton.addEventListener('mouseup', () => {
+                clearInterval(gameState.paddleInterval);
+            });
+            
+            rightButton.addEventListener('touchstart', () => {
+                if (gameState.gameOver || gameState.paused) return;
+                gameState.paddleInterval = setInterval(() => movePaddle(10), 16);
+            });
+            
+            rightButton.addEventListener('touchend', () => {
+                clearInterval(gameState.paddleInterval);
+            });
+            
+            // Обработка клавиатуры
+            document.addEventListener('keydown', (e) => {
+                if (gameState.gameOver || gameState.paused) return;
+                
+                if (e.key === 'ArrowLeft') {
+                    movePaddle(-20);
+                } else if (e.key === 'ArrowRight') {
+                    movePaddle(20);
+                } else if (e.key === ' ') {
+                    togglePause();
+                }
+            });
+        }
+        
+        // Инициализация игры при загрузке
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
